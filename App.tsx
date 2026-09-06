@@ -6,7 +6,7 @@ export default function App() {
     <View style={styles.container}>
       <Text>Movie Club</Text>
       <StatusBar style="auto" />
-      <View style={buttonStyles.Container}>
+      <View style={buttonPageStyles.Container}>
         <Button title="Add Movie" onPress={() => {}} />
         <Button title="View Movies" onPress={() => {}} />
         <Button title="Remove Movie" onPress={() => {}} />
@@ -15,7 +15,7 @@ export default function App() {
   );
 }
 
-const buttonStyles = StyleSheet.create({
+const buttonPageStyles = StyleSheet.create({
   Container: {
     flexDirection: "row",
     gap: 10,
