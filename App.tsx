@@ -1,13 +1,16 @@
-import { StyleSheet, Text, View, Button } from "react-native";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { NavigationContainer } from "@react-navigation/native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
+import { StyleSheet } from "react-native";
+import Ionicons from "@expo/vector-icons/Ionicons";
+
 import ProfileScreen from "./screens/ProfileScreen";
 import ActivityScreen from "./screens/ActivityScreen";
 import SearchScreen from "./screens/SearchScreen";
 import AddMovieScreen from "./screens/AddMovieScreen";
-import Ionicons from "@expo/vector-icons/Ionicons";
 import HomeScreen from "./screens/HomeScreen";
+
+import { colors } from "./theme/colors";
 
 const BottomTab = createBottomTabNavigator();
 
@@ -15,25 +18,7 @@ export default function App() {
   return (
     <SafeAreaProvider>
       <NavigationContainer>
-        <BottomTab.Navigator
-          screenOptions={{
-            headerShown: false,
-            tabBarActiveTintColor: "#7F00FF",
-            tabBarInactiveTintColor: "#9ab8c4",
-            tabBarStyle: {
-              backgroundColor: "#14181c",
-              borderTopColor: "#2c3440",
-              borderTopWidth: 1,
-              height: 100,
-              paddingBottom: 8,
-              paddingTop: 8,
-            },
-            tabBarLabelStyle: {
-              fontSize: 11,
-              fontWeight: "600",
-            },
-          }}
-        >
+        <BottomTab.Navigator screenOptions={tabBarScreenOptions}>
           <BottomTab.Screen
             name="Movies"
             component={HomeScreen}
@@ -91,10 +76,24 @@ export default function App() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#fff",
-    alignItems: "center",
-    justifyContent: "center",
+  tabBar: {
+    backgroundColor: colors.background,
+    borderTopColor: colors.border,
+    borderTopWidth: 1,
+    height: 80,
+    paddingBottom: 8,
+    paddingTop: 8,
+  },
+  tabBarLabel: {
+    fontSize: 11,
+    fontWeight: "600",
   },
 });
+
+const tabBarScreenOptions = {
+  headerShown: false,
+  tabBarActiveTintColor: colors.accent,
+  tabBarInactiveTintColor: colors.textMuted,
+  tabBarStyle: styles.tabBar,
+  tabBarLabelStyle: styles.tabBarLabel,
+};
