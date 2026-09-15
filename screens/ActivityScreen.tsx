@@ -4,19 +4,14 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import MyActivityScreen from "./subscreens/MyActivityScreen";
 import FriendsActivityScreen from "./subscreens/FriendsActivityScreen";
 
+import { colors } from "../theme/colors";
+
 const TopTab = createMaterialTopTabNavigator();
 
-export default function ActivityScreen() {
+function ActivityScreen() {
   return (
-    <SafeAreaView style={{ flex: 1 }} edges={["top"]}>
-      <TopTab.Navigator
-        screenOptions={{
-          tabBarActiveTintColor: "#7F00FF",
-          tabBarInactiveTintColor: "#9ab",
-          tabBarIndicatorStyle: { backgroundColor: "#7F00FF" },
-          tabBarStyle: { backgroundColor: "#14181c" },
-        }}
-      >
+    <SafeAreaView style={styles.safeArea} edges={["top"]}>
+      <TopTab.Navigator screenOptions={topTabScreenOptions}>
         <TopTab.Screen name="Me" component={MyActivityScreen} />
         <TopTab.Screen name="Friends" component={FriendsActivityScreen} />
       </TopTab.Navigator>
@@ -24,11 +19,24 @@ export default function ActivityScreen() {
   );
 }
 
+export default ActivityScreen;
+
 const styles = StyleSheet.create({
-  container: {
+  safeArea: {
     flex: 1,
-    backgroundColor: "#fff",
-    alignItems: "center",
-    justifyContent: "center",
+    backgroundColor: colors.background,
+  },
+  tabBar: {
+    backgroundColor: colors.background,
+  },
+  indicator: {
+    backgroundColor: colors.accent,
   },
 });
+
+const topTabScreenOptions = {
+  tabBarActiveTintColor: colors.accent,
+  tabBarInactiveTintColor: colors.textMuted,
+  tabBarIndicatorStyle: styles.indicator,
+  tabBarStyle: styles.tabBar,
+};

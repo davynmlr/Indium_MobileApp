@@ -2,6 +2,7 @@ import { useState } from "react";
 import { View, Text, StyleSheet, TextInput } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Ionicons from "@expo/vector-icons/Ionicons";
+import { colors } from "../theme/colors";
 
 export default function SearchScreen() {
   const [query, setQuery] = useState("");
@@ -14,15 +15,15 @@ export default function SearchScreen() {
         <View style={styles.searchBar}>
           <Ionicons
             name="search"
-            size={24}
-            color="#7F00FF"
-            style={styles.searchBar}
+            size={20}
+            color={colors.textMuted}
+            style={styles.icon}
           />
           <TextInput
             value={query}
             onChangeText={setQuery}
-            placeholder="Search for a movie/serie"
-            placeholderTextColor="#6b7d8a"
+            placeholder="Search for a movie/series"
+            placeholderTextColor={colors.placeholder}
             style={styles.input}
             autoCorrect={false}
           />
@@ -41,13 +42,16 @@ export default function SearchScreen() {
 }
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: colors.background,
+  },
   container: {
     flex: 1,
-    backgroundColor: "#14181c",
     paddingHorizontal: 16,
   },
   title: {
-    color: "#fff",
+    color: colors.text,
     fontSize: 24,
     fontWeight: "700",
     marginBottom: 16,
@@ -56,17 +60,18 @@ const styles = StyleSheet.create({
   searchBar: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#1f262d",
+    backgroundColor: colors.surface,
     borderRadius: 10,
     paddingHorizontal: 12,
     height: 44,
+    gap: 8,
   },
   icon: {
     marginRight: 8,
   },
   input: {
     flex: 1,
-    color: "#fff",
+    color: colors.text,
     fontSize: 15,
   },
   resultsPlaceholder: {
@@ -75,11 +80,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   placeholderText: {
-    color: "#6b7d8a",
+    color: colors.textMuted,
     fontSize: 14,
-  },
-  safeArea: {
-    flex: 1,
-    backgroundColor: "#14181c",
   },
 });
