@@ -6,7 +6,21 @@ export type TmdbMediaResult = {
   release_date?: string;
   first_air_date?: string;
   poster_path: string | null;
+  backdrop_path?: string | null;
   overview: string;
+  original_language?: string;
+  popularity?: number;
+  vote_average?: number;
+  vote_count?: number;
+};
+
+export type TmdbMediaDetails = TmdbMediaResult & {
+  genres?: { id: number; name: string }[];
+  runtime?: number | null;
+  number_of_seasons?: number;
+  number_of_episodes?: number;
+  status?: string;
+  tagline?: string;
 };
 
 type TmdbSearchResponse = {
@@ -45,6 +59,34 @@ export async function searchTmdb(query: string, signal?: AbortSignal) {
   );
 }
 
-export function getTmdbImageUrl(path: string | null) {
-  return path ? `${TMDB_IMAGE_BASE_URL}${path}` : null;
+export async function getTmdbDetails(
+  mediaType: TmdbMediaResult["media_type"],
+  id: number,
+  signal?: AbortSignal,
+) {
+  const apiKey = process.env.EXPO_PUBLIC_TMDB_API_KEY?.trim();
+
+  if (!apiKey) {
+    throw new Error("Missing EXPO_PUBLIC_TMDB_API_KEY");
+  }
+
+  const response = await fetch(
+    `https://api.themoviedb.org/3/${mediaType === "movie" ? "movie" : "tv"}/${id}?api_key=${apiKey}&language=en-US`,
+    { signal },
+  );
+
+  if (!response.ok) {
+    const errorData = (await response.json().catch(() => null)) as {
+      status_message?: string;
+    } | null;
+    throw new Error(
+      errorData?.status_message ?? `TMDB details failed (${response.status})`,
+    );
+  }
+
+  return (await response.json()) as TmdbMediaDetails;
+}
+
+export function getTmdbImageUrl(path: string | null, size = "w185") {
+  return path ? `${TMDB_IMAGE_BASE_URL.replace("w185", size)}${path}` : null;
 }

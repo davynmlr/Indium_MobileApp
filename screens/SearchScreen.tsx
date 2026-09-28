@@ -3,6 +3,7 @@ import {
   ActivityIndicator,
   FlatList,
   Image,
+  Pressable,
   View,
   Text,
   StyleSheet,
@@ -12,8 +13,13 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { colors } from "../theme/colors";
 import { getTmdbImageUrl, searchTmdb, TmdbMediaResult } from "../services/tmdb";
+import { useNavigation } from "@react-navigation/native";
+import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import type { RootStackParamList } from "../navigation/types";
 
 export default function SearchScreen() {
+  const navigation =
+    useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<TmdbMediaResult[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -65,7 +71,12 @@ export default function SearchScreen() {
     const imageUrl = getTmdbImageUrl(item.poster_path);
 
     return (
-      <View style={styles.resultItem}>
+      <Pressable
+        style={({ pressed }) => [styles.resultItem, pressed && styles.pressed]}
+        onPress={() => navigation.navigate("MovieDetails", { result: item })}
+        accessibilityRole="button"
+        accessibilityLabel={`Open details for ${title}`}
+      >
         {imageUrl ? (
           <Image source={{ uri: imageUrl }} style={styles.poster} />
         ) : (
@@ -87,7 +98,7 @@ export default function SearchScreen() {
             </Text>
           ) : null}
         </View>
-      </View>
+      </Pressable>
     );
   };
 
@@ -198,6 +209,9 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     marginBottom: 12,
     overflow: "hidden",
+  },
+  pressed: {
+    opacity: 0.75,
   },
   poster: {
     width: 74,
