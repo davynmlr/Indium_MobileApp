@@ -22,10 +22,10 @@ function MainTabs() {
   return (
     <BottomTab.Navigator screenOptions={tabBarScreenOptions}>
       <BottomTab.Screen
-        name="Movies"
+        name="Home"
         component={HomeScreen}
         options={{
-          tabBarLabel: "Movies",
+          tabBarLabel: "Home",
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="film" color={color} size={size} />
           ),
