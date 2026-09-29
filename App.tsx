@@ -11,6 +11,7 @@ import SearchScreen from "./screens/SearchScreen";
 import AddMovieScreen from "./screens/AddMovieScreen";
 import HomeScreen from "./screens/HomeScreen";
 import MovieDetailsScreen from "./screens/MovieDetailsScreen";
+import LoginScreen from "./screens/LoginScreen";
 import type { RootStackParamList } from "./navigation/types";
 
 import { colors } from "./theme/colors";
@@ -83,6 +84,11 @@ export default function App() {
           <RootStack.Screen
             name="Main"
             component={MainTabs}
+            options={{ headerShown: false }}
+          />
+          <RootStack.Screen
+            name="Login"
+            component={LoginScreen}
             options={{ headerShown: false }}
           />
           <RootStack.Screen
