@@ -25,6 +25,9 @@ export default function FilmsScreen() {
     useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const [popularMovies, setPopularMovies] = useState<TmdbMediaResult[]>([]);
   const [newMovies, setNewMovies] = useState<TmdbMediaResult[]>([]);
+  const [expandedSections, setExpandedSections] = useState<
+    Record<string, boolean>
+  >({});
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -94,15 +97,33 @@ export default function FilmsScreen() {
     <View style={styles.section}>
       <View style={styles.sectionHeader}>
         <Text style={styles.sectionTitle}>{title}</Text>
-        <Text style={styles.sectionAction}>{actionLabel}</Text>
+        <Pressable
+          onPress={() =>
+            setExpandedSections((current) => ({
+              ...current,
+              [title]: !current[title],
+            }))
+          }
+          accessibilityRole="button"
+          accessibilityLabel={`${expandedSections[title] ? "Show fewer" : actionLabel} ${title.toLowerCase()}`}
+          hitSlop={8}
+        >
+          <Text style={styles.sectionAction}>
+            {expandedSections[title] ? "Show less" : actionLabel}
+          </Text>
+        </Pressable>
       </View>
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.row}
-      >
-        {movies.map(renderMovie)}
-      </ScrollView>
+      {expandedSections[title] ? (
+        <View style={styles.grid}>{movies.map(renderMovie)}</View>
+      ) : (
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.row}
+        >
+          {movies.slice(0, 6).map(renderMovie)}
+        </ScrollView>
+      )}
     </View>
   );
 
@@ -170,6 +191,12 @@ const styles = StyleSheet.create({
   sectionTitle: { color: colors.text, fontSize: 18, fontWeight: "700" },
   sectionAction: { color: colors.accent, fontSize: 12, fontWeight: "600" },
   row: { gap: 12, paddingHorizontal: 16 },
+  grid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 12,
+    paddingHorizontal: 16,
+  },
   movieCard: { width: 124 },
   pressed: { opacity: 0.72 },
   poster: {

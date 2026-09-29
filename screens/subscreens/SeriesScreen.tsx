@@ -25,6 +25,7 @@ export default function SeriesScreen() {
     useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const [topSeries, setTopSeries] = useState<TmdbMediaResult[]>([]);
   const [newSeries, setNewSeries] = useState<TmdbMediaResult[]>([]);
+  const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({});
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -94,15 +95,33 @@ export default function SeriesScreen() {
     <View style={styles.section}>
       <View style={styles.sectionHeader}>
         <Text style={styles.sectionTitle}>{title}</Text>
-        <Text style={styles.sectionAction}>{actionLabel}</Text>
+        <Pressable
+          onPress={() =>
+            setExpandedSections((current) => ({
+              ...current,
+              [title]: !current[title],
+            }))
+          }
+          accessibilityRole="button"
+          accessibilityLabel={`${expandedSections[title] ? "Show fewer" : actionLabel} ${title.toLowerCase()}`}
+          hitSlop={8}
+        >
+          <Text style={styles.sectionAction}>
+            {expandedSections[title] ? "Show less" : actionLabel}
+          </Text>
+        </Pressable>
       </View>
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.row}
-      >
-        {series.map(renderSeries)}
-      </ScrollView>
+      {expandedSections[title] ? (
+        <View style={styles.grid}>{series.map(renderSeries)}</View>
+      ) : (
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.row}
+        >
+          {series.slice(0, 6).map(renderSeries)}
+        </ScrollView>
+      )}
     </View>
   );
 
@@ -170,6 +189,12 @@ const styles = StyleSheet.create({
   sectionTitle: { color: colors.text, fontSize: 18, fontWeight: "700" },
   sectionAction: { color: colors.accent, fontSize: 12, fontWeight: "600" },
   row: { gap: 12, paddingHorizontal: 16 },
+  grid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 12,
+    paddingHorizontal: 16,
+  },
   seriesCard: { width: 124 },
   pressed: { opacity: 0.72 },
   poster: {
