@@ -27,6 +27,14 @@ type TmdbSearchResponse = {
   results: TmdbMediaResult[];
 };
 
+type TmdbMovieListResponse = {
+  results: Omit<TmdbMediaResult, "media_type">[];
+};
+
+type TmdbSeriesListResponse = {
+  results: Omit<TmdbMediaResult, "media_type">[];
+};
+
 const TMDB_IMAGE_BASE_URL = "https://image.tmdb.org/t/p/w185";
 
 export async function searchTmdb(query: string, signal?: AbortSignal) {
@@ -57,6 +65,62 @@ export async function searchTmdb(query: string, signal?: AbortSignal) {
   return data.results.filter(
     (result) => result.media_type === "movie" || result.media_type === "tv",
   );
+}
+
+export async function getTmdbMovieList(
+  list: "top_rated" | "now_playing",
+  signal?: AbortSignal,
+) {
+  const apiKey = process.env.EXPO_PUBLIC_TMDB_API_KEY?.trim();
+
+  if (!apiKey) {
+    throw new Error("Missing EXPO_PUBLIC_TMDB_API_KEY");
+  }
+
+  const response = await fetch(
+    `https://api.themoviedb.org/3/movie/${list}?api_key=${apiKey}&language=en-US&page=1`,
+    { signal },
+  );
+
+  if (!response.ok) {
+    const errorData = (await response.json().catch(() => null)) as {
+      status_message?: string;
+    } | null;
+    throw new Error(
+      errorData?.status_message ?? `TMDB ${list} movies failed (${response.status})`,
+    );
+  }
+
+  const data = (await response.json()) as TmdbMovieListResponse;
+  return data.results.map((result) => ({ ...result, media_type: "movie" as const }));
+}
+
+export async function getTmdbSeriesList(
+  list: "top_rated" | "on_the_air",
+  signal?: AbortSignal,
+) {
+  const apiKey = process.env.EXPO_PUBLIC_TMDB_API_KEY?.trim();
+
+  if (!apiKey) {
+    throw new Error("Missing EXPO_PUBLIC_TMDB_API_KEY");
+  }
+
+  const response = await fetch(
+    `https://api.themoviedb.org/3/tv/${list}?api_key=${apiKey}&language=en-US&page=1`,
+    { signal },
+  );
+
+  if (!response.ok) {
+    const errorData = (await response.json().catch(() => null)) as {
+      status_message?: string;
+    } | null;
+    throw new Error(
+      errorData?.status_message ?? `TMDB ${list} series failed (${response.status})`,
+    );
+  }
+
+  const data = (await response.json()) as TmdbSeriesListResponse;
+  return data.results.map((result) => ({ ...result, media_type: "tv" as const }));
 }
 
 export async function getTmdbDetails(
