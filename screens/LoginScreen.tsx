@@ -10,6 +10,7 @@ import {
   createUserWithEmailAndPassword,
   deleteUser,
   signInWithEmailAndPassword,
+  signOut,
   updateProfile,
 } from "firebase/auth";
 import { auth } from "../services/firebase";
@@ -27,6 +28,7 @@ export default function LoginScreen({ navigation }: any) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
   const [usernameTaken, setUsernameTaken] = useState(false);
 
   const checkUsername = async () => {
@@ -64,6 +66,12 @@ export default function LoginScreen({ navigation }: any) {
       await deleteUser(user).catch(() => {});
       throw e;
     }
+
+    // Registering signs the user in automatically: sign out so they log in themselves.
+    await signOut(auth);
+    setPassword("");
+    setIsRegister(false);
+    setNotice("Account created. You can now log in.");
   };
 
   const login = async () => {
@@ -77,10 +85,12 @@ export default function LoginScreen({ navigation }: any) {
       }
     }
     await signInWithEmailAndPassword(auth, loginEmail, password);
+    navigation.popTo("Main", { screen: "Profile" });
   };
 
   const handleSubmit = async () => {
     setError("");
+    setNotice("");
     try {
       if (isRegister) {
         await register();
@@ -147,6 +157,7 @@ export default function LoginScreen({ navigation }: any) {
       />
 
       {error ? <Text style={styles.error}>{error}</Text> : null}
+      {notice ? <Text style={styles.notice}>{notice}</Text> : null}
 
       <TouchableOpacity style={styles.button} onPress={handleSubmit}>
         <Text style={styles.buttonText}>
@@ -208,6 +219,7 @@ const styles = StyleSheet.create({
     textDecorationLine: "underline",
   },
   error: { color: "#ff6b6b", textAlign: "center", marginBottom: 8 },
+  notice: { color: "#51cf66", textAlign: "center", marginBottom: 8 },
   usernameTaken: {
     color: "#ff9f43",
     fontSize: 12,

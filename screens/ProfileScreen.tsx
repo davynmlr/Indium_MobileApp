@@ -23,6 +23,9 @@ export default function ProfileScreen({ navigation }: any) {
 
   return (
     <View style={styles.container}>
+      {user.displayName ? (
+        <Text style={styles.username}>{user.displayName}</Text>
+      ) : null}
       <Text style={styles.text}>{user.email}</Text>
       <TouchableOpacity style={styles.button} onPress={() => signOut(auth)}>
         <Text style={styles.buttonText}>Log Out</Text>
@@ -37,6 +40,12 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
     alignItems: "center",
     justifyContent: "center",
+  },
+  username: {
+    color: colors.text,
+    fontSize: 24,
+    fontWeight: "bold",
+    marginBottom: 8,
   },
   text: { color: colors.text, fontSize: 18, marginBottom: 16 },
   button: {
