@@ -1,5 +1,5 @@
 import { initializeApp } from "firebase/app";
-import { getFirestore } from "firebase/firestore";
+import { initializeFirestore } from "firebase/firestore";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 // @ts-ignore
@@ -18,4 +18,8 @@ const app = initializeApp(firebaseConfig);
 export const auth = initializeAuth(app, {
   persistence: getReactNativePersistence(AsyncStorage),
 });
-export const db = getFirestore(app);
+// Firestore's default streaming transport is unreliable in React Native,
+// so use long polling instead.
+export const db = initializeFirestore(app, {
+  experimentalForceLongPolling: true,
+});

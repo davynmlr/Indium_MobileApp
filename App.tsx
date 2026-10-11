@@ -12,6 +12,7 @@ import AddMovieScreen from "./screens/AddMovieScreen";
 import HomeScreen from "./screens/HomeScreen";
 import MovieDetailsScreen from "./screens/MovieDetailsScreen";
 import LoginScreen from "./screens/LoginScreen";
+import SettingsScreen from "./screens/SettingsScreen";
 import type { RootStackParamList } from "./navigation/types";
 
 import { colors } from "./theme/colors";
@@ -90,6 +91,16 @@ export default function App() {
             name="Login"
             component={LoginScreen}
             options={{ headerShown: false }}
+          />
+          <RootStack.Screen
+            name="Settings"
+            component={SettingsScreen}
+            options={{
+              title: "Settings",
+              headerTintColor: colors.text,
+              headerStyle: { backgroundColor: colors.background },
+              headerTitleStyle: { color: colors.text },
+            }}
           />
           <RootStack.Screen
             name="MovieDetails"
