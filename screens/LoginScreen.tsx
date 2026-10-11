@@ -8,34 +8,96 @@ import {
 } from "react-native";
 import {
   createUserWithEmailAndPassword,
+  deleteUser,
   signInWithEmailAndPassword,
+  updateProfile,
 } from "firebase/auth";
 import { auth } from "../services/firebase";
+import {
+  USERNAME_REGEX,
+  claimUsername,
+  getEmailForUsername,
+  isUsernameTaken,
+} from "../services/usernames";
 import { colors } from "../theme/colors";
 
 export default function LoginScreen({ navigation }: any) {
   const [isRegister, setIsRegister] = useState(false);
+  const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [usernameTaken, setUsernameTaken] = useState(false);
+
+  const checkUsername = async () => {
+    if (!USERNAME_REGEX.test(username.trim())) return;
+    try {
+      setUsernameTaken(await isUsernameTaken(username));
+    } catch {
+      // Ignore: the check runs again on submit.
+    }
+  };
+
+  const register = async () => {
+    const name = username.trim();
+    if (!USERNAME_REGEX.test(name)) {
+      setError(
+        "Username must be 3-20 characters: letters, numbers or underscores.",
+      );
+      return;
+    }
+    if (await isUsernameTaken(name)) {
+      setUsernameTaken(true);
+      return;
+    }
+
+    const { user } = await createUserWithEmailAndPassword(
+      auth,
+      email.trim(),
+      password,
+    );
+    try {
+      await claimUsername(name, user.uid, email.trim());
+      await updateProfile(user, { displayName: name });
+    } catch (e: any) {
+      // Don't leave an account without a username behind.
+      await deleteUser(user).catch(() => {});
+      throw e;
+    }
+  };
+
+  const login = async () => {
+    const identifier = email.trim();
+    let loginEmail: string | null = identifier;
+    if (!identifier.includes("@")) {
+      loginEmail = await getEmailForUsername(identifier);
+      if (!loginEmail) {
+        setError("Incorrect username/email or password.");
+        return;
+      }
+    }
+    await signInWithEmailAndPassword(auth, loginEmail, password);
+  };
 
   const handleSubmit = async () => {
     setError("");
     try {
       if (isRegister) {
-        await createUserWithEmailAndPassword(auth, email, password);
+        await register();
       } else {
-        await signInWithEmailAndPassword(auth, email, password);
+        await login();
       }
     } catch (e: any) {
-      if (e.code === "auth/email-already-in-use") {
+      if (e.code === "username-taken") {
+        setUsernameTaken(true);
+      } else if (e.code === "auth/email-already-in-use") {
         setError("This email is already registered. Try logging in instead.");
       } else if (e.code === "auth/invalid-email") {
         setError("Please enter a valid email address.");
       } else if (e.code === "auth/weak-password") {
         setError("Password should be at least 6 characters.");
       } else if (e.code === "auth/invalid-credential") {
-        setError("Incorrect email or password.");
+        setError("Incorrect username/email or password.");
       } else {
         setError("Something went wrong. Please try again.");
       }
@@ -46,13 +108,34 @@ export default function LoginScreen({ navigation }: any) {
     <View style={styles.container}>
       <Text style={styles.title}>Indium</Text>
 
+      {isRegister ? (
+        <>
+          <TextInput
+            style={styles.input}
+            placeholder="Username"
+            placeholderTextColor={colors.placeholder}
+            value={username}
+            onChangeText={(text) => {
+              setUsername(text);
+              setUsernameTaken(false);
+            }}
+            onBlur={checkUsername}
+            autoCapitalize="none"
+            autoCorrect={false}
+          />
+          {usernameTaken ? (
+            <Text style={styles.usernameTaken}>username is taken</Text>
+          ) : null}
+        </>
+      ) : null}
       <TextInput
         style={styles.input}
-        placeholder="Email"
+        placeholder={isRegister ? "Email" : "Email or username"}
         placeholderTextColor={colors.placeholder}
         value={email}
         onChangeText={setEmail}
         autoCapitalize="none"
+        autoCorrect={false}
       />
       <TextInput
         style={styles.input}
@@ -125,4 +208,11 @@ const styles = StyleSheet.create({
     textDecorationLine: "underline",
   },
   error: { color: "#ff6b6b", textAlign: "center", marginBottom: 8 },
+  usernameTaken: {
+    color: "#ff9f43",
+    fontSize: 12,
+    marginTop: -8,
+    marginBottom: 12,
+    marginLeft: 4,
+  },
 });
