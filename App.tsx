@@ -8,12 +8,12 @@ import Ionicons from "@expo/vector-icons/Ionicons";
 import ProfileScreen from "./screens/ProfileScreen";
 import ActivityScreen from "./screens/ActivityScreen";
 import SearchScreen from "./screens/SearchScreen";
-import AddMovieScreen from "./screens/AddMovieScreen";
 import HomeScreen from "./screens/HomeScreen";
 import MovieDetailsScreen from "./screens/MovieDetailsScreen";
 import LoginScreen from "./screens/LoginScreen";
 import SettingsScreen from "./screens/SettingsScreen";
 import type { RootStackParamList } from "./navigation/types";
+import WatchlistScreen from "./screens/WatchlistScreen";
 
 import { colors } from "./theme/colors";
 
@@ -44,12 +44,12 @@ function MainTabs() {
         }}
       />
       <BottomTab.Screen
-        name="AddMovie"
-        component={AddMovieScreen}
+        name="Watchlist"
+        component={WatchlistScreen}
         options={{
-          tabBarLabel: "Add Movie",
+          tabBarLabel: "Watchlist",
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="add" color={color} size={size} />
+            <Ionicons name="book" color={color} size={size} />
           ),
         }}
       />

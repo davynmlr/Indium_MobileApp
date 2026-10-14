@@ -1,9 +1,9 @@
 import { View, Text, StyleSheet } from "react-native";
 
-export default function AddMovieScreen() {
+export default function WatchlistScreen() {
   return (
     <View style={styles.container}>
-      <Text>Add Movie Screen</Text>
+      <Text>Watchlist Screen</Text>
     </View>
   );
 }
