@@ -25,6 +25,8 @@ import {
   saveWatchlist,
   subscribeToWatchlist,
 } from "../services/watchlist";
+import { addReview, getAverageRating, getMediaKey } from "../services/reviews";
+import ReviewModal from "../components/ReviewModal";
 import type { RootStackParamList } from "../navigation/types";
 import { colors } from "../theme/colors";
 
@@ -47,6 +49,59 @@ export default function MovieDetailsScreen({ route, navigation }: Props) {
 
   const inWatchlist = isInWatchlist(watchlist, result);
 
+  // The watchlist without this movie (used to remove it).
+  const watchlistWithoutThis = () =>
+    watchlist.filter(
+      (item) => !(item.id === result.id && item.media_type === result.media_type),
+    );
+
+  const [reviewOpen, setReviewOpen] = useState(false);
+  // Average of the app users' ratings (each user's last rating only).
+  const [userRating, setUserRating] = useState<{
+    average: number | null;
+    count: number;
+  }>({ average: null, count: 0 });
+
+  const loadUserRating = () => {
+    getAverageRating(getMediaKey(result))
+      .then(setUserRating)
+      .catch(() => {});
+  };
+
+  useEffect(loadUserRating, [result.id, result.media_type]);
+
+  const openReview = () => {
+    if (!user) {
+      navigation.navigate("Login");
+      return;
+    }
+    setReviewOpen(true);
+  };
+
+  const submitReview = async (rating: number, comment: string) => {
+    if (!user) return;
+    setReviewOpen(false);
+    try {
+      await addReview({
+        uid: user.uid,
+        username: user.displayName ?? "",
+        mediaKey: getMediaKey(result),
+        title: details.title ?? details.name ?? "Untitled",
+        poster_path: details.poster_path ?? null,
+        rating,
+        comment,
+        createdAt: Date.now(),
+      });
+      // A reviewed movie has been watched, so it leaves the watchlist.
+      if (inWatchlist) {
+        await saveWatchlist(user.uid, watchlistWithoutThis());
+      }
+      loadUserRating();
+    } catch {
+      setError("Could not save your review.");
+    }
+  };
+
   // Adds the movie to the watchlist, or removes it if it is already there.
   const toggleWatchlist = async () => {
     if (!user) {
@@ -54,10 +109,7 @@ export default function MovieDetailsScreen({ route, navigation }: Props) {
       return;
     }
     const next = inWatchlist
-      ? watchlist.filter(
-          (item) =>
-            !(item.id === result.id && item.media_type === result.media_type),
-        )
+      ? watchlistWithoutThis()
       : [...watchlist, toFavorite(result)];
     try {
       await saveWatchlist(user.uid, next);
@@ -112,6 +164,17 @@ export default function MovieDetailsScreen({ route, navigation }: Props) {
           </Text>
         </TouchableOpacity>
 
+        <TouchableOpacity style={styles.reviewButton} onPress={openReview}>
+          <Text style={styles.watchlistButtonText}>Review</Text>
+        </TouchableOpacity>
+
+        <ReviewModal
+          visible={reviewOpen}
+          title={title}
+          onClose={() => setReviewOpen(false)}
+          onSubmit={submitReview}
+        />
+
         {details.tagline ? <Text style={styles.tagline}>{details.tagline}</Text> : null}
 
         <View style={styles.stats}>
@@ -121,6 +184,15 @@ export default function MovieDetailsScreen({ route, navigation }: Props) {
               {details.vote_average ? details.vote_average.toFixed(1) : "-"}
             </Text>
             <Text style={styles.statLabel}>Rating</Text>
+          </View>
+          <View style={styles.stat}>
+            <Ionicons name="people" size={18} color={colors.accent} />
+            <Text style={styles.statValue}>
+              {userRating.average ? `${userRating.average.toFixed(1)}/5` : "-"}
+            </Text>
+            <Text style={styles.statLabel}>
+              {userRating.count} {userRating.count === 1 ? "review" : "reviews"}
+            </Text>
           </View>
           <View style={styles.stat}>
             <Text style={styles.statValue}>{details.original_language?.toUpperCase() ?? "-"}</Text>
@@ -200,6 +272,13 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.accent,
+  },
+  reviewButton: {
+    backgroundColor: colors.surface,
+    borderRadius: 8,
+    paddingVertical: 10,
+    alignItems: "center",
+    marginTop: 10,
   },
   watchlistButtonText: { color: colors.text, fontSize: 15, fontWeight: "600" },
 });
