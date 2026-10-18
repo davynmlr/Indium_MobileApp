@@ -13,7 +13,8 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { colors } from "../theme/colors";
-import { getTmdbImageUrl, searchTmdb, TmdbMediaResult } from "../services/tmdb";
+import { useTmdbSearch } from "../hooks/useTmdbSearch";
+import { getTmdbImageUrl, TmdbMediaResult } from "../services/tmdb";
 
 type Props = {
   visible: boolean;
@@ -30,53 +31,13 @@ export default function MoviePickerModal({
 }: Props) {
   const label = mediaType === "movie" ? "movie" : "series";
   const [query, setQuery] = useState("");
-  const [results, setResults] = useState<TmdbMediaResult[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const { results: allResults, isLoading, error } = useTmdbSearch(query);
+  // Keep only movies, or only series, depending on the slot being filled
+  const results = allResults.filter((result) => result.media_type === mediaType);
 
   useEffect(() => {
     if (!visible) setQuery("");
   }, [visible]);
-
-  useEffect(() => {
-    const trimmedQuery = query.trim();
-
-    if (!trimmedQuery) {
-      setResults([]);
-      setError(null);
-      setIsLoading(false);
-      return;
-    }
-
-    const controller = new AbortController();
-    const timeout = setTimeout(async () => {
-      setIsLoading(true);
-      setError(null);
-
-      try {
-        const nextResults = await searchTmdb(trimmedQuery, controller.signal);
-        setResults(nextResults.filter((result) => result.media_type === mediaType));
-      } catch (requestError) {
-        if ((requestError as Error).name !== "AbortError") {
-          setResults([]);
-          setError(
-            requestError instanceof Error
-              ? requestError.message
-              : "Could not load results.",
-          );
-        }
-      } finally {
-        if (!controller.signal.aborted) {
-          setIsLoading(false);
-        }
-      }
-    }, 350);
-
-    return () => {
-      clearTimeout(timeout);
-      controller.abort();
-    };
-  }, [query, mediaType]);
 
   const renderResult = ({ item }: { item: TmdbMediaResult }) => {
     const title = item.title ?? item.name ?? "Untitled";

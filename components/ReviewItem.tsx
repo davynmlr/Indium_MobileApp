@@ -4,7 +4,7 @@
 import { Image, Pressable, StyleSheet, Text, View } from "react-native";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { getTmdbImageUrl } from "../services/tmdb";
-import type { Review } from "../services/reviews";
+import { getStarIcon, Review } from "../services/reviews";
 import { colors } from "../theme/colors";
 
 type Props = {
@@ -31,13 +31,7 @@ export default function ReviewItem({ review, onPress }: Props) {
           {[1, 2, 3, 4, 5].map((star) => (
             <Ionicons
               key={star}
-              name={
-                review.rating >= star
-                  ? "star"
-                  : review.rating === star - 0.5
-                    ? "star-half"
-                    : "star-outline"
-              }
+              name={getStarIcon(review.rating, star)}
               size={14}
               color={colors.accent}
             />

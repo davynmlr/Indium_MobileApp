@@ -25,10 +25,6 @@ export type Review = {
   createdAt: number; // date in milliseconds
 };
 
-// A movie and a series can have the same id, so we add the type in front.
-export const getMediaKey = (media: TmdbMediaResult) =>
-  `${media.media_type}-${media.id}`;
-
 // Saves a new review in the database.
 export async function addReview(review: Review) {
   await addDoc(collection(db, "reviews"), review);
@@ -88,4 +84,12 @@ export function reviewToMedia(review: Review): TmdbMediaResult {
     poster_path: review.poster_path,
     overview: "",
   };
+}
+
+// Gives the icon to show for one star, depending on the rating.
+// Example with a rating of 3.5: stars 1-3 are full, star 4 is half, star 5 is empty.
+export function getStarIcon(rating: number, star: number) {
+  if (rating >= star) return "star";
+  if (rating === star - 0.5) return "star-half";
+  return "star-outline";
 }

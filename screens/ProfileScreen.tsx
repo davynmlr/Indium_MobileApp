@@ -5,7 +5,6 @@ import {
   ScrollView,
   View,
   Text,
-  TouchableOpacity,
   StyleSheet,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -13,6 +12,7 @@ import Ionicons from "@expo/vector-icons/Ionicons";
 import { useAuth } from "../hooks/useAuth";
 import MoviePickerModal from "../components/MoviePickerModal";
 import ReviewItem from "../components/ReviewItem";
+import LoggedOutView from "../components/LoggedOutView";
 import {
   Review,
   reviewToMedia,
@@ -24,9 +24,12 @@ import {
   FavoriteType,
   saveFavorites,
   subscribeToFavorites,
-  toFavorite,
 } from "../services/favorites";
-import { getTmdbImageUrl, TmdbMediaResult } from "../services/tmdb";
+import {
+  getTmdbImageUrl,
+  toSavedMedia,
+  TmdbMediaResult,
+} from "../services/tmdb";
 import { colors } from "../theme/colors";
 
 export default function ProfileScreen({ navigation }: any) {
@@ -60,17 +63,7 @@ export default function ProfileScreen({ navigation }: any) {
   }, [uid]);
 
   if (!user) {
-    return (
-      <View style={styles.loggedOut}>
-        <Text style={styles.text}>You're not logged in.</Text>
-        <TouchableOpacity
-          style={styles.button}
-          onPress={() => navigation.navigate("Login")}
-        >
-          <Text style={styles.buttonText}>Log In / Register</Text>
-        </TouchableOpacity>
-      </View>
-    );
+    return <LoggedOutView message="You're not logged in." />;
   }
 
   const updateSlot = async (
@@ -91,7 +84,7 @@ export default function ProfileScreen({ navigation }: any) {
 
   const handleSelect = (media: TmdbMediaResult) => {
     if (pickingSlot !== null) {
-      updateSlot(pickingSlot.type, pickingSlot.index, toFavorite(media));
+      updateSlot(pickingSlot.type, pickingSlot.index, toSavedMedia(media));
     }
     setPickingSlot(null);
   };
@@ -241,12 +234,6 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.background,
   },
-  loggedOut: {
-    flex: 1,
-    backgroundColor: colors.background,
-    alignItems: "center",
-    justifyContent: "center",
-  },
   content: {
     paddingHorizontal: 16,
     paddingBottom: 24,
@@ -356,12 +343,4 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   error: { color: "#ff6b6b", marginTop: 8 },
-  text: { color: colors.text, fontSize: 18, marginBottom: 16 },
-  button: {
-    backgroundColor: colors.accent,
-    borderRadius: 8,
-    padding: 14,
-    paddingHorizontal: 24,
-  },
-  buttonText: { color: colors.text, fontWeight: "600" },
 });

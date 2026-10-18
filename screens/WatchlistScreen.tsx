@@ -10,6 +10,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useAuth } from "../hooks/useAuth";
+import LoggedOutView from "../components/LoggedOutView";
 import { subscribeToWatchlist } from "../services/watchlist";
 import { getTmdbImageUrl, TmdbMediaResult } from "../services/tmdb";
 import { colors } from "../theme/colors";
@@ -28,17 +29,7 @@ export default function WatchlistScreen({ navigation }: any) {
   }, [uid]);
 
   if (!user) {
-    return (
-      <View style={styles.centered}>
-        <Text style={styles.text}>Log in to see your watchlist.</Text>
-        <TouchableOpacity
-          style={styles.button}
-          onPress={() => navigation.navigate("Login")}
-        >
-          <Text style={styles.buttonText}>Log In / Register</Text>
-        </TouchableOpacity>
-      </View>
-    );
+    return <LoggedOutView message="Log in to see your watchlist." />;
   }
 
   const filteredList =
@@ -106,12 +97,6 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.background,
   },
-  centered: {
-    flex: 1,
-    backgroundColor: colors.background,
-    alignItems: "center",
-    justifyContent: "center",
-  },
   title: {
     color: colors.text,
     fontSize: 24,
@@ -168,16 +153,5 @@ const styles = StyleSheet.create({
     fontSize: 15,
     textAlign: "center",
     marginTop: 20,
-  },
-  button: {
-    backgroundColor: colors.accent,
-    borderRadius: 8,
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    marginTop: 16,
-  },
-  buttonText: {
-    color: colors.text,
-    fontWeight: "600",
   },
 });

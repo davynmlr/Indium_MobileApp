@@ -3,7 +3,7 @@
 
 import { doc, onSnapshot, setDoc } from "firebase/firestore";
 import { db } from "./firebase";
-import type { TmdbMediaResult } from "./tmdb";
+import { getMediaKey, TmdbMediaResult } from "./tmdb";
 
 // Listens to the user's watchlist in the database.
 // Each time it changes, `onChange` is called with the new list.
@@ -24,12 +24,17 @@ export async function saveWatchlist(uid: string, watchlist: TmdbMediaResult[]) {
 }
 
 // Returns true if this movie/series is in the watchlist.
-// We check the type too, because a movie and a series can have the same id.
 export function isInWatchlist(
   watchlist: TmdbMediaResult[],
   media: TmdbMediaResult,
 ) {
-  return watchlist.some(
-    (item) => item.id === media.id && item.media_type === media.media_type,
-  );
+  return watchlist.some((item) => getMediaKey(item) === getMediaKey(media));
+}
+
+// Returns the watchlist without this movie/series.
+export function removeFromWatchlist(
+  watchlist: TmdbMediaResult[],
+  media: TmdbMediaResult,
+) {
+  return watchlist.filter((item) => getMediaKey(item) !== getMediaKey(media));
 }

@@ -15,17 +15,19 @@ import Ionicons from "@expo/vector-icons/Ionicons";
 import {
   getTmdbDetails,
   getTmdbImageUrl,
+  getMediaKey,
   TmdbMediaDetails,
   TmdbMediaResult,
+  toSavedMedia,
 } from "../services/tmdb";
 import { useAuth } from "../hooks/useAuth";
-import { toFavorite } from "../services/favorites";
 import {
   isInWatchlist,
+  removeFromWatchlist,
   saveWatchlist,
   subscribeToWatchlist,
 } from "../services/watchlist";
-import { addReview, getAverageRating, getMediaKey } from "../services/reviews";
+import { addReview, getAverageRating } from "../services/reviews";
 import ReviewModal from "../components/ReviewModal";
 import type { RootStackParamList } from "../navigation/types";
 import { colors } from "../theme/colors";
@@ -48,12 +50,6 @@ export default function MovieDetailsScreen({ route, navigation }: Props) {
   }, [uid]);
 
   const inWatchlist = isInWatchlist(watchlist, result);
-
-  // The watchlist without this movie (used to remove it).
-  const watchlistWithoutThis = () =>
-    watchlist.filter(
-      (item) => !(item.id === result.id && item.media_type === result.media_type),
-    );
 
   const [reviewOpen, setReviewOpen] = useState(false);
   // Average of the app users' ratings (each user's last rating only).
@@ -94,7 +90,7 @@ export default function MovieDetailsScreen({ route, navigation }: Props) {
       });
       // A reviewed movie has been watched, so it leaves the watchlist.
       if (inWatchlist) {
-        await saveWatchlist(user.uid, watchlistWithoutThis());
+        await saveWatchlist(user.uid, removeFromWatchlist(watchlist, result));
       }
       loadUserRating();
     } catch {
@@ -109,8 +105,8 @@ export default function MovieDetailsScreen({ route, navigation }: Props) {
       return;
     }
     const next = inWatchlist
-      ? watchlistWithoutThis()
-      : [...watchlist, toFavorite(result)];
+      ? removeFromWatchlist(watchlist, result)
+      : [...watchlist, toSavedMedia(result)];
     try {
       await saveWatchlist(user.uid, next);
     } catch {

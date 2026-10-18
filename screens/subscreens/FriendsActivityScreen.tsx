@@ -1,9 +1,10 @@
 import { View, Text, StyleSheet } from "react-native";
+import { colors } from "../../theme/colors";
 
 export default function FriendsActivityScreen() {
   return (
     <View style={styles.container}>
-      <Text>Friends Activity Screen</Text>
+      <Text style={styles.text}>Friends Activity Screen</Text>
     </View>
   );
 }
@@ -11,8 +12,11 @@ export default function FriendsActivityScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#fff",
+    backgroundColor: colors.background,
     alignItems: "center",
     justifyContent: "center",
+  },
+  text: {
+    color: colors.textMuted,
   },
 });

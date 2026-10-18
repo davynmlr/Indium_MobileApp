@@ -64,17 +64,3 @@ export async function saveFavorites(
     { merge: true },
   );
 }
-
-// Makes a small, clean copy of a movie/series before saving it.
-// Firestore does not accept "undefined" values, so we give a default value
-// to each field, and we only keep the fields the app needs.
-export function toFavorite(result: TmdbMediaResult): TmdbMediaResult {
-  return {
-    id: result.id,
-    media_type: result.media_type,
-    title: result.title ?? result.name ?? "Untitled",
-    release_date: result.release_date ?? result.first_air_date ?? "",
-    poster_path: result.poster_path ?? null,
-    overview: result.overview ?? "",
-  };
-}

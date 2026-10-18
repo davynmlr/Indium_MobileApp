@@ -12,6 +12,7 @@ import {
 } from "react-native";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { colors } from "../theme/colors";
+import { getStarIcon } from "../services/reviews";
 
 type Props = {
   visible: boolean;
@@ -49,13 +50,7 @@ export default function ReviewModal({ visible, title, onClose, onSubmit }: Props
             {[1, 2, 3, 4, 5].map((star) => (
               <View key={star}>
                 <Ionicons
-                  name={
-                    rating >= star
-                      ? "star"
-                      : rating === star - 0.5
-                        ? "star-half"
-                        : "star-outline"
-                  }
+                  name={getStarIcon(rating, star)}
                   size={36}
                   color={colors.accent}
                 />

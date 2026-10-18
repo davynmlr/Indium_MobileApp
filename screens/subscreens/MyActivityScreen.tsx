@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
-import { FlatList, StyleSheet, Text, View } from "react-native";
+import { FlatList, StyleSheet, Text } from "react-native";
 import { useAuth } from "../../hooks/useAuth";
 import ReviewItem from "../../components/ReviewItem";
+import LoggedOutView from "../../components/LoggedOutView";
 import {
   Review,
   reviewToMedia,
@@ -21,11 +22,7 @@ export default function MyActivityScreen({ navigation }: any) {
   }, [uid]);
 
   if (!user) {
-    return (
-      <View style={styles.container}>
-        <Text style={styles.text}>Log in to see your activity.</Text>
-      </View>
-    );
+    return <LoggedOutView message="Log in to see your activity." />;
   }
 
   return (

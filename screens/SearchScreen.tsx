@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import {
   ActivityIndicator,
   FlatList,
@@ -12,7 +12,8 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { colors } from "../theme/colors";
-import { getTmdbImageUrl, searchTmdb, TmdbMediaResult } from "../services/tmdb";
+import { useTmdbSearch } from "../hooks/useTmdbSearch";
+import { getTmdbImageUrl, TmdbMediaResult } from "../services/tmdb";
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import type { RootStackParamList } from "../navigation/types";
@@ -21,49 +22,7 @@ export default function SearchScreen() {
   const navigation =
     useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const [query, setQuery] = useState("");
-  const [results, setResults] = useState<TmdbMediaResult[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    const trimmedQuery = query.trim();
-
-    if (!trimmedQuery) {
-      setResults([]);
-      setError(null);
-      setIsLoading(false);
-      return;
-    }
-
-    const controller = new AbortController();
-    const timeout = setTimeout(async () => {
-      setIsLoading(true);
-      setError(null);
-
-      try {
-        const nextResults = await searchTmdb(trimmedQuery, controller.signal);
-        setResults(nextResults);
-      } catch (requestError) {
-        if ((requestError as Error).name !== "AbortError") {
-          setResults([]);
-          setError(
-            requestError instanceof Error
-              ? requestError.message
-              : "Could not load results.",
-          );
-        }
-      } finally {
-        if (!controller.signal.aborted) {
-          setIsLoading(false);
-        }
-      }
-    }, 350);
-
-    return () => {
-      clearTimeout(timeout);
-      controller.abort();
-    };
-  }, [query]);
+  const { results, isLoading, error } = useTmdbSearch(query);
 
   const renderResult = ({ item }: { item: TmdbMediaResult }) => {
     const title = item.title ?? item.name ?? "Untitled";
