@@ -6,6 +6,7 @@ import {
   ScrollView,
   StyleSheet,
   Text,
+  TouchableOpacity,
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -15,16 +16,55 @@ import {
   getTmdbDetails,
   getTmdbImageUrl,
   TmdbMediaDetails,
+  TmdbMediaResult,
 } from "../services/tmdb";
+import { useAuth } from "../hooks/useAuth";
+import { toFavorite } from "../services/favorites";
+import {
+  isInWatchlist,
+  saveWatchlist,
+  subscribeToWatchlist,
+} from "../services/watchlist";
 import type { RootStackParamList } from "../navigation/types";
 import { colors } from "../theme/colors";
 
 type Props = NativeStackScreenProps<RootStackParamList, "MovieDetails">;
 
-export default function MovieDetailsScreen({ route }: Props) {
+export default function MovieDetailsScreen({ route, navigation }: Props) {
   const { result } = route.params;
   const [details, setDetails] = useState<TmdbMediaDetails>(result);
   const [error, setError] = useState<string | null>(null);
+  const { user } = useAuth();
+  const [watchlist, setWatchlist] = useState<TmdbMediaResult[]>([]);
+
+  const uid = user?.uid;
+
+  // Listen to the watchlist to know if this movie is already in it.
+  useEffect(() => {
+    if (!uid) return;
+    return subscribeToWatchlist(uid, setWatchlist);
+  }, [uid]);
+
+  const inWatchlist = isInWatchlist(watchlist, result);
+
+  // Adds the movie to the watchlist, or removes it if it is already there.
+  const toggleWatchlist = async () => {
+    if (!user) {
+      navigation.navigate("Login");
+      return;
+    }
+    const next = inWatchlist
+      ? watchlist.filter(
+          (item) =>
+            !(item.id === result.id && item.media_type === result.media_type),
+        )
+      : [...watchlist, toFavorite(result)];
+    try {
+      await saveWatchlist(user.uid, next);
+    } catch {
+      setError("Could not update your watchlist.");
+    }
+  };
 
   useEffect(() => {
     const controller = new AbortController();
@@ -62,6 +102,15 @@ export default function MovieDetailsScreen({ route }: Props) {
           {date ? ` · ${date.slice(0, 4)}` : ""}
           {details.runtime ? ` · ${details.runtime} min` : ""}
         </Text>
+
+        <TouchableOpacity
+          style={[styles.watchlistButton, inWatchlist && styles.watchlistButtonActive]}
+          onPress={toggleWatchlist}
+        >
+          <Text style={styles.watchlistButtonText}>
+            {inWatchlist ? "- Watchlist" : "+ Watchlist"}
+          </Text>
+        </TouchableOpacity>
 
         {details.tagline ? <Text style={styles.tagline}>{details.tagline}</Text> : null}
 
@@ -140,4 +189,17 @@ const styles = StyleSheet.create({
   genreText: { color: colors.text, fontSize: 12 },
   error: { color: colors.textMuted, fontSize: 13, marginTop: 20 },
   loader: { marginTop: 20 },
+  watchlistButton: {
+    backgroundColor: colors.accent,
+    borderRadius: 8,
+    paddingVertical: 10,
+    alignItems: "center",
+    marginTop: 14,
+  },
+  watchlistButtonActive: {
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.accent,
+  },
+  watchlistButtonText: { color: colors.text, fontSize: 15, fontWeight: "600" },
 });

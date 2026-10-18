@@ -1,0 +1,35 @@
+// This file manages the watchlist of a user.
+// It is saved in the database in the document users/{uid}, in the field "watchlist".
+
+import { doc, onSnapshot, setDoc } from "firebase/firestore";
+import { db } from "./firebase";
+import type { TmdbMediaResult } from "./tmdb";
+
+// Listens to the user's watchlist in the database.
+// Each time it changes, `onChange` is called with the new list.
+// It returns a function to stop listening (use it when the screen closes).
+export function subscribeToWatchlist(
+  uid: string,
+  onChange: (watchlist: TmdbMediaResult[]) => void,
+) {
+  return onSnapshot(doc(db, "users", uid), (snapshot) => {
+    onChange(snapshot.data()?.watchlist ?? []);
+  });
+}
+
+// Saves the whole watchlist in the database.
+// `merge: true` means we only change this field and keep the rest of the user data.
+export async function saveWatchlist(uid: string, watchlist: TmdbMediaResult[]) {
+  await setDoc(doc(db, "users", uid), { watchlist }, { merge: true });
+}
+
+// Returns true if this movie/series is in the watchlist.
+// We check the type too, because a movie and a series can have the same id.
+export function isInWatchlist(
+  watchlist: TmdbMediaResult[],
+  media: TmdbMediaResult,
+) {
+  return watchlist.some(
+    (item) => item.id === media.id && item.media_type === media.media_type,
+  );
+}
