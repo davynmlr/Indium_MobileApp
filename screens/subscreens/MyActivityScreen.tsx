@@ -1,18 +1,64 @@
-import { View, Text, StyleSheet } from "react-native";
+import { useEffect, useState } from "react";
+import { FlatList, StyleSheet, Text, View } from "react-native";
+import { useAuth } from "../../hooks/useAuth";
+import ReviewItem from "../../components/ReviewItem";
+import {
+  Review,
+  reviewToMedia,
+  subscribeToUserReviews,
+} from "../../services/reviews";
+import { colors } from "../../theme/colors";
 
-export default function MyActivityScreen() {
+export default function MyActivityScreen({ navigation }: any) {
+  const { user } = useAuth();
+  const [reviews, setReviews] = useState<Review[]>([]);
+
+  const uid = user?.uid;
+
+  useEffect(() => {
+    if (!uid) return;
+    return subscribeToUserReviews(uid, setReviews);
+  }, [uid]);
+
+  if (!user) {
+    return (
+      <View style={styles.container}>
+        <Text style={styles.text}>Log in to see your activity.</Text>
+      </View>
+    );
+  }
+
   return (
-    <View style={styles.container}>
-      <Text>My Activity Screen</Text>
-    </View>
+    <FlatList
+      style={styles.container}
+      contentContainerStyle={styles.list}
+      data={reviews}
+      keyExtractor={(item) => `${item.mediaKey}-${item.createdAt}`}
+      ListEmptyComponent={<Text style={styles.text}>No reviews yet.</Text>}
+      renderItem={({ item }) => (
+        <ReviewItem
+          review={item}
+          onPress={() =>
+            navigation.navigate("MovieDetails", { result: reviewToMedia(item) })
+          }
+        />
+      )}
+    />
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#fff",
-    alignItems: "center",
-    justifyContent: "center",
+    backgroundColor: colors.background,
+  },
+  list: {
+    padding: 16,
+  },
+  text: {
+    color: colors.textMuted,
+    fontSize: 15,
+    textAlign: "center",
+    marginTop: 20,
   },
 });

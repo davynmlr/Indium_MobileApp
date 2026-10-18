@@ -12,6 +12,12 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { useAuth } from "../hooks/useAuth";
 import MoviePickerModal from "../components/MoviePickerModal";
+import ReviewItem from "../components/ReviewItem";
+import {
+  Review,
+  reviewToMedia,
+  subscribeToUserReviews,
+} from "../services/reviews";
 import {
   emptyFavorites,
   Favorites,
@@ -43,6 +49,14 @@ export default function ProfileScreen({ navigation }: any) {
     return subscribeToFavorites(uid, setFavorites, () =>
       setFavoritesError("Could not load your favorites."),
     );
+  }, [uid]);
+
+  // The user's reviews, newest first (we show the last 3 in "Recent activity").
+  const [reviews, setReviews] = useState<Review[]>([]);
+
+  useEffect(() => {
+    if (!uid) return;
+    return subscribeToUserReviews(uid, setReviews);
   }, [uid]);
 
   if (!user) {
@@ -192,10 +206,24 @@ export default function ProfileScreen({ navigation }: any) {
         ) : null}
 
         <Text style={styles.sectionTitle}>Recent activity</Text>
-        <View style={styles.emptyActivity}>
-          <Ionicons name="time-outline" size={24} color={colors.textMuted} />
-          <Text style={styles.emptyText}>No recent activity yet</Text>
-        </View>
+        {reviews.length === 0 ? (
+          <View style={styles.emptyActivity}>
+            <Ionicons name="time-outline" size={24} color={colors.textMuted} />
+            <Text style={styles.emptyText}>No recent activity yet</Text>
+          </View>
+        ) : (
+          reviews.slice(0, 3).map((review) => (
+            <ReviewItem
+              key={`${review.mediaKey}-${review.createdAt}`}
+              review={review}
+              onPress={() =>
+                navigation.navigate("MovieDetails", {
+                  result: reviewToMedia(review),
+                })
+              }
+            />
+          ))
+        )}
       </ScrollView>
 
       <MoviePickerModal
