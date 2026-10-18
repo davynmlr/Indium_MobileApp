@@ -17,6 +17,8 @@ import { colors } from "../theme/colors";
 export default function WatchlistScreen({ navigation }: any) {
   const { user } = useAuth();
   const [watchlist, setWatchlist] = useState<TmdbMediaResult[]>([]);
+  // Which titles to show: everything, only movies or only series.
+  const [filter, setFilter] = useState<"all" | "movie" | "tv">("all");
 
   const uid = user?.uid;
 
@@ -39,16 +41,41 @@ export default function WatchlistScreen({ navigation }: any) {
     );
   }
 
+  const filteredList =
+    filter === "all"
+      ? watchlist
+      : watchlist.filter((item) => item.media_type === filter);
+
+  const filters = [
+    { value: "all", label: "All" },
+    { value: "movie", label: "Movies" },
+    { value: "tv", label: "Series" },
+  ] as const;
+
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
       <Text style={styles.title}>Watchlist</Text>
+      <View style={styles.filterRow}>
+        {filters.map((option) => (
+          <TouchableOpacity
+            key={option.value}
+            style={[
+              styles.filterButton,
+              filter === option.value && styles.filterButtonActive,
+            ]}
+            onPress={() => setFilter(option.value)}
+          >
+            <Text style={styles.filterText}>{option.label}</Text>
+          </TouchableOpacity>
+        ))}
+      </View>
       <FlatList
-        data={watchlist}
+        data={filteredList}
         numColumns={4}
         keyExtractor={(item) => `${item.media_type}-${item.id}`}
         contentContainerStyle={styles.list}
         ListEmptyComponent={
-          <Text style={styles.text}>Your watchlist is empty.</Text>
+          <Text style={styles.text}>Nothing here yet.</Text>
         }
         renderItem={({ item }) => {
           const imageUrl = getTmdbImageUrl(item.poster_path, "w185");
@@ -91,6 +118,26 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     marginHorizontal: 12,
     marginVertical: 12,
+  },
+  filterRow: {
+    flexDirection: "row",
+    gap: 8,
+    marginHorizontal: 12,
+    marginBottom: 12,
+  },
+  filterButton: {
+    backgroundColor: colors.surface,
+    borderRadius: 16,
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+  },
+  filterButtonActive: {
+    backgroundColor: colors.accent,
+  },
+  filterText: {
+    color: colors.text,
+    fontSize: 13,
+    fontWeight: "600",
   },
   list: {
     paddingHorizontal: 8,
