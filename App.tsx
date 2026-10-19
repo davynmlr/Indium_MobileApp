@@ -16,6 +16,8 @@ import type { RootStackParamList } from "./navigation/types";
 import WatchlistScreen from "./screens/WatchlistScreen";
 import DiaryScreen from "./screens/DiaryScreen";
 import MySeriesScreen from "./screens/MySeriesScreen";
+import UserProfileScreen from "./screens/UserProfileScreen";
+import FollowListScreen from "./screens/FollowListScreen";
 
 import { colors } from "./theme/colors";
 
@@ -117,7 +119,17 @@ export default function App() {
           <RootStack.Screen
             name="MySeries"
             component={MySeriesScreen}
-            options={{ title: "My series", ...stackHeaderOptions }}
+            options={{ title: "Series", ...stackHeaderOptions }}
+          />
+          <RootStack.Screen
+            name="UserProfile"
+            component={UserProfileScreen}
+            options={{ title: "Profile", ...stackHeaderOptions }}
+          />
+          <RootStack.Screen
+            name="FollowList"
+            component={FollowListScreen}
+            options={{ title: "Followers", ...stackHeaderOptions }}
           />
         </RootStack.Navigator>
       </NavigationContainer>

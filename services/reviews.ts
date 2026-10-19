@@ -74,6 +74,43 @@ export function subscribeToUserReviews(
   );
 }
 
+// Listens to the reviews of several users at once (the people the user follows),
+// newest first. Firestore's "in" accepts at most 30 values, so we split the
+// list in groups of 30 and listen to each group.
+// It returns a function to stop listening to all groups.
+export function subscribeToReviewsOfUsers(
+  uids: string[],
+  onChange: (reviews: Review[]) => void,
+) {
+  if (uids.length === 0) {
+    onChange([]);
+    return () => {};
+  }
+
+  // Reviews of each group, merged each time one group changes.
+  const groups: Review[][] = [];
+  const stops: (() => void)[] = [];
+  for (let i = 0; i < uids.length; i += 30) {
+    const index = groups.length;
+    groups.push([]);
+    stops.push(
+      onSnapshot(
+        query(
+          collection(db, "reviews"),
+          where("uid", "in", uids.slice(i, i + 30)),
+        ),
+        (snapshot) => {
+          groups[index] = snapshot.docs.map((d) => d.data() as Review);
+          const all = groups.flat();
+          all.sort((a, b) => getReviewDate(b) - getReviewDate(a));
+          onChange(all);
+        },
+      ),
+    );
+  }
+  return () => stops.forEach((stop) => stop());
+}
+
 // Turns a review back into a movie/series, to open its details page.
 // mediaKey looks like "movie-123", so we split it to get the type and the id.
 export function reviewToMedia(review: Review): TmdbMediaResult {

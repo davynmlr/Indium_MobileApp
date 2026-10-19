@@ -2,8 +2,19 @@
 // Each username is saved in the "usernames" collection.
 // The username itself is the name of the document, so two users cannot have the same one.
 
-import { doc, getDoc, runTransaction } from "firebase/firestore";
+import {
+  collection,
+  doc,
+  documentId,
+  getDoc,
+  getDocs,
+  limit,
+  query,
+  runTransaction,
+  where,
+} from "firebase/firestore";
 import { db } from "./firebase";
+import type { UserSummary } from "./follows";
 
 // Rules for a valid username:
 // only letters, numbers and "_", between 3 and 20 characters.
@@ -48,4 +59,25 @@ export async function claimUsername(
     // It is free, so we save it with the user id and email
     transaction.set(ref, { uid, email, username: username.trim() });
   });
+}
+
+// Finds users whose username starts with `text` (max 20 results).
+// The document names are the lowercase usernames, so we search between
+// "text" and "text" + a very big character.
+export async function searchUsers(text: string): Promise<UserSummary[]> {
+  const start = text.trim().toLowerCase();
+  if (!start) return [];
+  const snapshot = await getDocs(
+    query(
+      collection(db, "usernames"),
+      where(documentId(), ">=", start),
+      where(documentId(), "<=", start + ""),
+      limit(20),
+    ),
+  );
+  // Only keep the uid and the username (not the email).
+  return snapshot.docs.map((d) => ({
+    uid: d.data().uid as string,
+    username: d.data().username as string,
+  }));
 }

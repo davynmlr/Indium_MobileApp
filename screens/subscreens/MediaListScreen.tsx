@@ -19,6 +19,8 @@ import {
 } from "../../services/tmdb";
 import type { NewSeason } from "../../services/seriesProgress";
 import { useNewSeasons } from "../../hooks/useNewSeasons";
+import { useFriendsActivity } from "../../hooks/useFriendsActivity";
+import { Review, reviewToMedia } from "../../services/reviews";
 import type { RootStackParamList } from "../../navigation/types";
 import { colors } from "../../theme/colors";
 
@@ -48,6 +50,11 @@ export default function MediaListScreen({
   const [error, setError] = useState<string | null>(null);
   // Series the user follows that got a new season (empty on the Films tab).
   const newSeasons = useNewSeasons(mediaType === "tv");
+  // Latest reviews of the people the user follows, only films or only series.
+  const { activity } = useFriendsActivity();
+  const friendReviews = activity
+    .filter((review) => review.mediaKey.startsWith(`${mediaType}-`))
+    .slice(0, 10);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -148,6 +155,47 @@ export default function MediaListScreen({
     );
   };
 
+  // Card of a friend's review: poster with the rating, title and who reviewed it.
+  const renderFriendReview = (review: Review) => {
+    const posterUrl = getTmdbImageUrl(review.poster_path, "w342");
+
+    return (
+      <Pressable
+        key={`${review.uid}-${review.mediaKey}-${review.createdAt}`}
+        style={({ pressed }) => [styles.card, pressed && styles.pressed]}
+        onPress={() =>
+          navigation.navigate("MovieDetails", { result: reviewToMedia(review) })
+        }
+        accessibilityRole="button"
+        accessibilityLabel={`${review.username} rated ${review.title} ${review.rating} out of 5`}
+      >
+        <View>
+          {posterUrl ? (
+            <Image source={{ uri: posterUrl }} style={styles.poster} />
+          ) : (
+            <View style={[styles.poster, styles.posterPlaceholder]}>
+              <Ionicons
+                name={mediaType === "movie" ? "film-outline" : "tv-outline"}
+                size={28}
+                color={colors.textMuted}
+              />
+            </View>
+          )}
+          <View style={styles.badge}>
+            <Ionicons name="star" size={10} color={colors.text} />
+            <Text style={styles.badgeText}> {review.rating}</Text>
+          </View>
+        </View>
+        <Text style={styles.cardTitle} numberOfLines={2}>
+          {review.title}
+        </Text>
+        <Text style={styles.friendName} numberOfLines={1}>
+          by {review.username}
+        </Text>
+      </Pressable>
+    );
+  };
+
   const renderSection = (
     title: string,
     list: TmdbMediaResult[],
@@ -231,21 +279,38 @@ export default function MediaListScreen({
       <View style={styles.section}>
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Friend pulse</Text>
-          <Text style={styles.sectionAction}>Friends</Text>
+          <Pressable
+            // "Friends" is a bottom tab: the navigation finds it from here.
+            onPress={() => (navigation as any).navigate("Friends")}
+            accessibilityRole="button"
+            hitSlop={8}
+          >
+            <Text style={styles.sectionAction}>See all</Text>
+          </Pressable>
         </View>
-        <View style={styles.friendEmptyState}>
-          <View style={styles.friendIcon}>
-            <Ionicons name="people-outline" size={24} color={colors.accent} />
+        {friendReviews.length > 0 ? (
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.row}
+          >
+            {friendReviews.map(renderFriendReview)}
+          </ScrollView>
+        ) : (
+          <View style={styles.friendEmptyState}>
+            <View style={styles.friendIcon}>
+              <Ionicons name="people-outline" size={24} color={colors.accent} />
+            </View>
+            <View style={styles.friendCopy}>
+              <Text style={styles.friendTitle}>
+                Your friends&apos; {label} will appear here
+              </Text>
+              <Text style={styles.friendText}>
+                Follow friends and their recent reviews will show up in this feed.
+              </Text>
+            </View>
           </View>
-          <View style={styles.friendCopy}>
-            <Text style={styles.friendTitle}>
-              Your friends&apos; {label} will appear here
-            </Text>
-            <Text style={styles.friendText}>
-              Follow friends and their recent watches will show up in this feed.
-            </Text>
-          </View>
-        </View>
+        )}
       </View>
     </ScrollView>
   );
@@ -295,6 +360,8 @@ const styles = StyleSheet.create({
   },
   rating: { color: colors.textMuted, fontSize: 12 },
   badge: {
+    flexDirection: "row",
+    alignItems: "center",
     position: "absolute",
     top: 6,
     left: 6,
@@ -304,6 +371,7 @@ const styles = StyleSheet.create({
     paddingVertical: 3,
   },
   badgeText: { color: colors.text, fontSize: 11, fontWeight: "700" },
+  friendName: { color: colors.accent, fontSize: 12, fontWeight: "600", marginTop: 4 },
   status: {
     alignItems: "center",
     gap: 10,

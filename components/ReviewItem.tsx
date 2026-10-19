@@ -1,5 +1,5 @@
 // One review in a list: poster, title, stars, comment and date.
-// Used in the Profile screen.
+// Used in the Profile, Diary and Friends screens.
 
 import { Image, Pressable, StyleSheet, Text, View } from "react-native";
 import Ionicons from "@expo/vector-icons/Ionicons";
@@ -10,9 +10,17 @@ import { colors } from "../theme/colors";
 type Props = {
   review: Review;
   onPress: () => void;
+  // Friends feed: show who wrote the review. Tapping the name calls onUserPress.
+  showUser?: boolean;
+  onUserPress?: () => void;
 };
 
-export default function ReviewItem({ review, onPress }: Props) {
+export default function ReviewItem({
+  review,
+  onPress,
+  showUser,
+  onUserPress,
+}: Props) {
   const imageUrl = getTmdbImageUrl(review.poster_path);
   const date = new Date(getReviewDate(review)).toLocaleDateString();
 
@@ -24,6 +32,14 @@ export default function ReviewItem({ review, onPress }: Props) {
         <View style={styles.poster} />
       )}
       <View style={styles.info}>
+        {showUser ? (
+          <Pressable onPress={onUserPress} hitSlop={6} style={styles.userRow}>
+            <Text style={styles.user} numberOfLines={1}>
+              {review.username}
+            </Text>
+            <Text style={styles.userAction}> reviewed</Text>
+          </Pressable>
+        ) : null}
         <Text style={styles.title} numberOfLines={1}>
           {review.title}
         </Text>
@@ -65,6 +81,20 @@ const styles = StyleSheet.create({
   },
   info: {
     flex: 1,
+  },
+  userRow: {
+    flexDirection: "row",
+    alignSelf: "flex-start",
+    marginBottom: 2,
+  },
+  user: {
+    color: colors.accent,
+    fontSize: 13,
+    fontWeight: "700",
+  },
+  userAction: {
+    color: colors.textMuted,
+    fontSize: 13,
   },
   title: {
     color: colors.text,
