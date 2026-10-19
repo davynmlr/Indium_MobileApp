@@ -176,7 +176,7 @@ export default function MediaListScreen({
       <View style={styles.section}>
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Friend pulse</Text>
-          <Text style={styles.sectionAction}>Activity</Text>
+          <Text style={styles.sectionAction}>Friends</Text>
         </View>
         <View style={styles.friendEmptyState}>
           <View style={styles.friendIcon}>

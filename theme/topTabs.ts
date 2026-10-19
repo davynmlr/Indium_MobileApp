@@ -1,4 +1,4 @@
-// Style of the tabs at the top of the Home and Activity screens.
+// Style of the tabs at the top of the Home screen.
 
 import { colors } from "./colors";
 

@@ -1,5 +1,5 @@
 // One review in a list: poster, title, stars, comment and date.
-// Used in the Activity screen and in the Profile screen.
+// Used in the Profile screen.
 
 import { Image, Pressable, StyleSheet, Text, View } from "react-native";
 import Ionicons from "@expo/vector-icons/Ionicons";

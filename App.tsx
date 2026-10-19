@@ -6,7 +6,7 @@ import { StyleSheet } from "react-native";
 import Ionicons from "@expo/vector-icons/Ionicons";
 
 import ProfileScreen from "./screens/ProfileScreen";
-import ActivityScreen from "./screens/ActivityScreen";
+import FriendsScreen from "./screens/FriendsScreen";
 import SearchScreen from "./screens/SearchScreen";
 import HomeScreen from "./screens/HomeScreen";
 import MovieDetailsScreen from "./screens/MovieDetailsScreen";
@@ -54,12 +54,12 @@ function MainTabs() {
         }}
       />
       <BottomTab.Screen
-        name="Activity"
-        component={ActivityScreen}
+        name="Friends"
+        component={FriendsScreen}
         options={{
-          tabBarLabel: "Activity",
+          tabBarLabel: "Friends",
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="list" color={color} size={size} />
+            <Ionicons name="people" color={color} size={size} />
           ),
         }}
       />
