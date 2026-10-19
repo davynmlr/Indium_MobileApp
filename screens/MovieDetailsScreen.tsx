@@ -148,12 +148,17 @@ export default function MovieDetailsScreen({ route, navigation }: Props) {
   const saveProgress = async (season: number, episode: number) => {
     if (!user) return;
     setProgressOpen(false);
+    const lastAired = details.last_episode_to_air;
     try {
       await saveSeriesProgress(user.uid, mediaKey, {
         media: toSavedMedia(result),
         season,
         episode,
         latestSeason: getLatestAiredSeason(details),
+        finished:
+          !!lastAired &&
+          season === lastAired.season_number &&
+          episode === lastAired.episode_number,
         updatedAt: Date.now(),
       });
     } catch {

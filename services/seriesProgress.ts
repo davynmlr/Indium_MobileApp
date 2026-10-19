@@ -17,6 +17,8 @@ export type SeriesProgress = {
   // Newest season that was already out when the user saved.
   // If TMDB later shows a bigger number, a new season came out.
   latestSeason: number;
+  // True if the user reached the last episode out when they saved.
+  finished?: boolean;
   updatedAt: number; // when the user saved, in milliseconds
 };
 

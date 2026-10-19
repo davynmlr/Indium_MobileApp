@@ -14,6 +14,8 @@ import LoginScreen from "./screens/LoginScreen";
 import SettingsScreen from "./screens/SettingsScreen";
 import type { RootStackParamList } from "./navigation/types";
 import WatchlistScreen from "./screens/WatchlistScreen";
+import DiaryScreen from "./screens/DiaryScreen";
+import MySeriesScreen from "./screens/MySeriesScreen";
 
 import { colors } from "./theme/colors";
 
@@ -95,22 +97,27 @@ export default function App() {
           <RootStack.Screen
             name="Settings"
             component={SettingsScreen}
-            options={{
-              title: "Settings",
-              headerTintColor: colors.text,
-              headerStyle: { backgroundColor: colors.background },
-              headerTitleStyle: { color: colors.text },
-            }}
+            options={{ title: "Settings", ...stackHeaderOptions }}
           />
           <RootStack.Screen
             name="MovieDetails"
             component={MovieDetailsScreen}
-            options={{
-              title: "Details",
-              headerTintColor: colors.text,
-              headerStyle: { backgroundColor: colors.background },
-              headerTitleStyle: { color: colors.text },
-            }}
+            options={{ title: "Details", ...stackHeaderOptions }}
+          />
+          <RootStack.Screen
+            name="Diary"
+            component={DiaryScreen}
+            options={{ title: "Diary", ...stackHeaderOptions }}
+          />
+          <RootStack.Screen
+            name="UserWatchlist"
+            component={WatchlistScreen}
+            options={{ title: "Watchlist", ...stackHeaderOptions }}
+          />
+          <RootStack.Screen
+            name="MySeries"
+            component={MySeriesScreen}
+            options={{ title: "My series", ...stackHeaderOptions }}
           />
         </RootStack.Navigator>
       </NavigationContainer>
@@ -132,6 +139,13 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
 });
+
+// Header style of the pages opened on top of the tabs.
+const stackHeaderOptions = {
+  headerTintColor: colors.text,
+  headerStyle: { backgroundColor: colors.background },
+  headerTitleStyle: { color: colors.text },
+};
 
 const tabBarScreenOptions = {
   headerShown: false,

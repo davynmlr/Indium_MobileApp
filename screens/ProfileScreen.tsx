@@ -32,6 +32,13 @@ import {
 } from "../services/tmdb";
 import { colors } from "../theme/colors";
 
+// Buttons at the top of the profile. Each one opens a page with this user's data.
+const profileLinks = [
+  { label: "Diary", icon: "book-outline", screen: "Diary" },
+  { label: "Watchlist", icon: "bookmark-outline", screen: "UserWatchlist" },
+  { label: "My series", icon: "tv-outline", screen: "MySeries" },
+] as const;
+
 export default function ProfileScreen({ navigation }: any) {
   const { user } = useAuth();
   const [favorites, setFavorites] = useState<Record<FavoriteType, Favorites>>({
@@ -189,6 +196,22 @@ export default function ProfileScreen({ navigation }: any) {
           </Pressable>
         </View>
 
+        <View style={styles.linksRow}>
+          {profileLinks.map((link) => (
+            <Pressable
+              key={link.screen}
+              style={({ pressed }) => [styles.linkButton, pressed && styles.pressed]}
+              onPress={() => navigation.navigate(link.screen, { uid: user.uid })}
+              accessibilityRole="button"
+            >
+              <Ionicons name={link.icon} size={22} color={colors.accent} />
+              <Text style={styles.linkText} numberOfLines={1}>
+                {link.label}
+              </Text>
+            </Pressable>
+          ))}
+        </View>
+
         <Text style={styles.sectionTitle}>Favorite movies</Text>
         {renderFavorites("movie")}
 
@@ -343,4 +366,23 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   error: { color: "#ff6b6b", marginTop: 8 },
+  linksRow: {
+    flexDirection: "row",
+    gap: 10,
+    marginTop: 20,
+  },
+  linkButton: {
+    flex: 1,
+    alignItems: "center",
+    gap: 6,
+    backgroundColor: colors.surface,
+    borderRadius: 10,
+    paddingVertical: 12,
+    paddingHorizontal: 4,
+  },
+  linkText: {
+    color: colors.text,
+    fontSize: 13,
+    fontWeight: "600",
+  },
 });

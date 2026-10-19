@@ -1,34 +1,34 @@
 import { useEffect, useState } from "react";
-import {
-  View,
-  Text,
-  Image,
-  FlatList,
-  Pressable,
-  TouchableOpacity,
-  StyleSheet,
-} from "react-native";
+import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useAuth } from "../hooks/useAuth";
 import LoggedOutView from "../components/LoggedOutView";
+import PosterGrid from "../components/PosterGrid";
 import { subscribeToWatchlist } from "../services/watchlist";
-import { getTmdbImageUrl, TmdbMediaResult } from "../services/tmdb";
+import type { TmdbMediaResult } from "../services/tmdb";
 import { colors } from "../theme/colors";
 
-export default function WatchlistScreen({ navigation }: any) {
+// Shows the watchlist of a user.
+// - From the bottom tab: no params, it shows the logged-in user's watchlist.
+// - From a profile: route.params.uid says whose watchlist to show
+//   (later, friends can open each other's watchlist this way).
+export default function WatchlistScreen({ route }: any) {
   const { user } = useAuth();
   const [watchlist, setWatchlist] = useState<TmdbMediaResult[]>([]);
   // Which titles to show: everything, only movies or only series.
   const [filter, setFilter] = useState<"all" | "movie" | "tv">("all");
 
-  const uid = user?.uid;
+  const profileUid: string | undefined = route?.params?.uid;
+  const uid = profileUid ?? user?.uid;
+  // Opened from a profile: the screen header already shows the title.
+  const fromProfile = profileUid !== undefined;
 
   useEffect(() => {
     if (!uid) return;
     return subscribeToWatchlist(uid, setWatchlist);
   }, [uid]);
 
-  if (!user) {
+  if (!uid) {
     return <LoggedOutView message="Log in to see your watchlist." />;
   }
 
@@ -44,9 +44,9 @@ export default function WatchlistScreen({ navigation }: any) {
   ] as const;
 
   return (
-    <SafeAreaView style={styles.container} edges={["top"]}>
-      <Text style={styles.title}>Watchlist</Text>
-      <View style={styles.filterRow}>
+    <SafeAreaView style={styles.container} edges={fromProfile ? [] : ["top"]}>
+      {fromProfile ? null : <Text style={styles.title}>Watchlist</Text>}
+      <View style={[styles.filterRow, fromProfile && styles.filterRowTop]}>
         {filters.map((option) => (
           <TouchableOpacity
             key={option.value}
@@ -60,34 +60,7 @@ export default function WatchlistScreen({ navigation }: any) {
           </TouchableOpacity>
         ))}
       </View>
-      <FlatList
-        data={filteredList}
-        numColumns={4}
-        keyExtractor={(item) => `${item.media_type}-${item.id}`}
-        contentContainerStyle={styles.list}
-        ListEmptyComponent={
-          <Text style={styles.text}>Nothing here yet.</Text>
-        }
-        renderItem={({ item }) => {
-          const imageUrl = getTmdbImageUrl(item.poster_path, "w185");
-          return (
-            <Pressable
-              style={styles.posterBox}
-              onPress={() => navigation.navigate("MovieDetails", { result: item })}
-            >
-              {imageUrl ? (
-                <Image source={{ uri: imageUrl }} style={styles.poster} />
-              ) : (
-                <View style={[styles.poster, styles.noPoster]}>
-                  <Text style={styles.noPosterText} numberOfLines={3}>
-                    {item.title}
-                  </Text>
-                </View>
-              )}
-            </Pressable>
-          );
-        }}
-      />
+      <PosterGrid data={filteredList} emptyText="Nothing here yet." />
     </SafeAreaView>
   );
 }
@@ -110,6 +83,9 @@ const styles = StyleSheet.create({
     marginHorizontal: 12,
     marginBottom: 12,
   },
+  filterRowTop: {
+    marginTop: 12,
+  },
   filterButton: {
     backgroundColor: colors.surface,
     borderRadius: 16,
@@ -123,35 +99,5 @@ const styles = StyleSheet.create({
     color: colors.text,
     fontSize: 13,
     fontWeight: "600",
-  },
-  list: {
-    paddingHorizontal: 8,
-  },
-  // Each poster takes 1/4 of the width, so we get 4 per line.
-  posterBox: {
-    width: "25%",
-    padding: 4,
-  },
-  poster: {
-    width: "100%",
-    aspectRatio: 2 / 3,
-    borderRadius: 6,
-    backgroundColor: colors.surface,
-  },
-  noPoster: {
-    alignItems: "center",
-    justifyContent: "center",
-    padding: 4,
-  },
-  noPosterText: {
-    color: colors.textMuted,
-    fontSize: 11,
-    textAlign: "center",
-  },
-  text: {
-    color: colors.textMuted,
-    fontSize: 15,
-    textAlign: "center",
-    marginTop: 20,
   },
 });
