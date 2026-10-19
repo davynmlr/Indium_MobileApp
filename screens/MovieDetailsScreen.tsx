@@ -74,7 +74,7 @@ export default function MovieDetailsScreen({ route, navigation }: Props) {
     setReviewOpen(true);
   };
 
-  const submitReview = async (rating: number, comment: string) => {
+  const submitReview = async (rating: number, comment: string, date: Date) => {
     if (!user) return;
     setReviewOpen(false);
     try {
@@ -87,6 +87,7 @@ export default function MovieDetailsScreen({ route, navigation }: Props) {
         rating,
         comment,
         createdAt: Date.now(),
+        date: date.getTime(),
       });
       // A reviewed movie has been watched, so it leaves the watchlist.
       if (inWatchlist) {

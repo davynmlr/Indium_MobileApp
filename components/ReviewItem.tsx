@@ -4,7 +4,7 @@
 import { Image, Pressable, StyleSheet, Text, View } from "react-native";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { getTmdbImageUrl } from "../services/tmdb";
-import { getStarIcon, Review } from "../services/reviews";
+import { getReviewDate, getStarIcon, Review } from "../services/reviews";
 import { colors } from "../theme/colors";
 
 type Props = {
@@ -14,7 +14,7 @@ type Props = {
 
 export default function ReviewItem({ review, onPress }: Props) {
   const imageUrl = getTmdbImageUrl(review.poster_path);
-  const date = new Date(review.createdAt).toLocaleDateString();
+  const date = new Date(getReviewDate(review)).toLocaleDateString();
 
   return (
     <Pressable style={styles.item} onPress={onPress}>

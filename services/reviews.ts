@@ -22,7 +22,8 @@ export type Review = {
   poster_path: string | null;
   rating: number; // 0.5 to 5 stars (steps of 0.5)
   comment: string;
-  createdAt: number; // date in milliseconds
+  createdAt: number; // when the review was saved, in milliseconds
+  date?: number; // when the user watched it, chosen in the review window (old reviews don't have it)
 };
 
 // Saves a new review in the database.
@@ -67,7 +68,7 @@ export function subscribeToUserReviews(
     (snapshot) => {
       const reviews = snapshot.docs.map((document) => document.data() as Review);
       // Sort here instead of in the query, so Firestore doesn't need an extra index.
-      reviews.sort((a, b) => b.createdAt - a.createdAt);
+      reviews.sort((a, b) => getReviewDate(b) - getReviewDate(a));
       onChange(reviews);
     },
   );
@@ -92,4 +93,10 @@ export function getStarIcon(rating: number, star: number) {
   if (rating >= star) return "star";
   if (rating === star - 0.5) return "star-half";
   return "star-outline";
+}
+
+// The date to show for a review: the chosen date,
+// or the save date for old reviews that don't have one.
+export function getReviewDate(review: Review) {
+  return review.date ?? review.createdAt;
 }
