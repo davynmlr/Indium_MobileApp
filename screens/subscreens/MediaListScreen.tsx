@@ -17,6 +17,8 @@ import {
   getTmdbList,
   TmdbMediaResult,
 } from "../../services/tmdb";
+import type { NewSeason } from "../../services/seriesProgress";
+import { useNewSeasons } from "../../hooks/useNewSeasons";
 import type { RootStackParamList } from "../../navigation/types";
 import { colors } from "../../theme/colors";
 
@@ -44,6 +46,8 @@ export default function MediaListScreen({
   >({});
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  // Series the user follows that got a new season (empty on the Films tab).
+  const newSeasons = useNewSeasons(mediaType === "tv");
 
   useEffect(() => {
     const controller = new AbortController();
@@ -108,6 +112,42 @@ export default function MediaListScreen({
     );
   };
 
+  // Card of a series with a new season: shows the new season and where the user stopped.
+  const renderNewSeason = ({ progress, newSeason }: NewSeason) => {
+    const media = progress.media;
+    const posterUrl = getTmdbImageUrl(media.poster_path, "w342");
+    const title = media.title ?? media.name ?? "Untitled";
+
+    return (
+      <Pressable
+        key={media.id}
+        style={({ pressed }) => [styles.card, pressed && styles.pressed]}
+        onPress={() => navigation.navigate("MovieDetails", { result: media })}
+        accessibilityRole="button"
+        accessibilityLabel={`Season ${newSeason} of ${title} is out`}
+      >
+        <View>
+          {posterUrl ? (
+            <Image source={{ uri: posterUrl }} style={styles.poster} />
+          ) : (
+            <View style={[styles.poster, styles.posterPlaceholder]}>
+              <Ionicons name="tv-outline" size={28} color={colors.textMuted} />
+            </View>
+          )}
+          <View style={styles.badge}>
+            <Text style={styles.badgeText}>Season {newSeason}</Text>
+          </View>
+        </View>
+        <Text style={styles.cardTitle} numberOfLines={2}>
+          {title}
+        </Text>
+        <Text style={styles.rating}>
+          You stopped at S{progress.season} · E{progress.episode}
+        </Text>
+      </Pressable>
+    );
+  };
+
   const renderSection = (
     title: string,
     list: TmdbMediaResult[],
@@ -152,6 +192,21 @@ export default function MediaListScreen({
       contentContainerStyle={styles.content}
       showsVerticalScrollIndicator={false}
     >
+      {newSeasons.length > 0 ? (
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>New seasons for you</Text>
+          </View>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.row}
+          >
+            {newSeasons.map(renderNewSeason)}
+          </ScrollView>
+        </View>
+      ) : null}
+
       {isLoading ? (
         <View style={styles.status}>
           <ActivityIndicator color={colors.accent} />
@@ -239,6 +294,16 @@ const styles = StyleSheet.create({
     marginTop: 5,
   },
   rating: { color: colors.textMuted, fontSize: 12 },
+  badge: {
+    position: "absolute",
+    top: 6,
+    left: 6,
+    backgroundColor: colors.accent,
+    borderRadius: 6,
+    paddingHorizontal: 6,
+    paddingVertical: 3,
+  },
+  badgeText: { color: colors.text, fontSize: 11, fontWeight: "700" },
   status: {
     alignItems: "center",
     gap: 10,

@@ -28,7 +28,16 @@ import {
   subscribeToWatchlist,
 } from "../services/watchlist";
 import { addReview, getAverageRating } from "../services/reviews";
+import {
+  getAiredSeasons,
+  getLatestAiredSeason,
+  removeSeriesProgress,
+  saveSeriesProgress,
+  SeriesProgressMap,
+  subscribeToSeriesProgress,
+} from "../services/seriesProgress";
 import ReviewModal from "../components/ReviewModal";
+import ProgressModal from "../components/ProgressModal";
 import type { RootStackParamList } from "../navigation/types";
 import { colors } from "../theme/colors";
 
@@ -50,6 +59,19 @@ export default function MovieDetailsScreen({ route, navigation }: Props) {
   }, [uid]);
 
   const inWatchlist = isInWatchlist(watchlist, result);
+
+  // Series only: where the user stopped watching.
+  const isSeries = result.media_type === "tv";
+  const mediaKey = getMediaKey(result);
+  const [allProgress, setAllProgress] = useState<SeriesProgressMap>({});
+  const [progressOpen, setProgressOpen] = useState(false);
+
+  useEffect(() => {
+    if (!uid || !isSeries) return;
+    return subscribeToSeriesProgress(uid, setAllProgress);
+  }, [uid, isSeries]);
+
+  const progress = allProgress[mediaKey];
 
   const [reviewOpen, setReviewOpen] = useState(false);
   // Average of the app users' ratings (each user's last rating only).
@@ -115,6 +137,40 @@ export default function MovieDetailsScreen({ route, navigation }: Props) {
     }
   };
 
+  const openProgress = () => {
+    if (!user) {
+      navigation.navigate("Login");
+      return;
+    }
+    setProgressOpen(true);
+  };
+
+  const saveProgress = async (season: number, episode: number) => {
+    if (!user) return;
+    setProgressOpen(false);
+    try {
+      await saveSeriesProgress(user.uid, mediaKey, {
+        media: toSavedMedia(result),
+        season,
+        episode,
+        latestSeason: getLatestAiredSeason(details),
+        updatedAt: Date.now(),
+      });
+    } catch {
+      setError("Could not save your progress.");
+    }
+  };
+
+  const removeProgress = async () => {
+    if (!user) return;
+    setProgressOpen(false);
+    try {
+      await removeSeriesProgress(user.uid, mediaKey);
+    } catch {
+      setError("Could not remove your progress.");
+    }
+  };
+
   useEffect(() => {
     const controller = new AbortController();
 
@@ -171,6 +227,41 @@ export default function MovieDetailsScreen({ route, navigation }: Props) {
           onClose={() => setReviewOpen(false)}
           onSubmit={submitReview}
         />
+
+        {isSeries ? (
+          <>
+            <TouchableOpacity style={styles.progressCard} onPress={openProgress}>
+              <Ionicons name="play-circle-outline" size={22} color={colors.accent} />
+              <View style={styles.progressCopy}>
+                <Text style={styles.progressLabel}>Your progress</Text>
+                <Text style={styles.progressValue}>
+                  {progress
+                    ? `Season ${progress.season} · Episode ${progress.episode}`
+                    : "Not started"}
+                </Text>
+              </View>
+              <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
+            </TouchableOpacity>
+
+            <ProgressModal
+              visible={progressOpen}
+              title={title}
+              seasons={getAiredSeasons(details)}
+              lastAired={
+                details.last_episode_to_air
+                  ? {
+                      season: details.last_episode_to_air.season_number,
+                      episode: details.last_episode_to_air.episode_number,
+                    }
+                  : null
+              }
+              initial={progress ?? null}
+              onClose={() => setProgressOpen(false)}
+              onSave={saveProgress}
+              onRemove={removeProgress}
+            />
+          </>
+        ) : null}
 
         {details.tagline ? <Text style={styles.tagline}>{details.tagline}</Text> : null}
 
@@ -278,4 +369,16 @@ const styles = StyleSheet.create({
     marginTop: 10,
   },
   watchlistButtonText: { color: colors.text, fontSize: 15, fontWeight: "600" },
+  progressCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    backgroundColor: colors.surface,
+    borderRadius: 8,
+    padding: 12,
+    marginTop: 10,
+  },
+  progressCopy: { flex: 1 },
+  progressLabel: { color: colors.textMuted, fontSize: 12 },
+  progressValue: { color: colors.text, fontSize: 15, fontWeight: "600", marginTop: 2 },
 });

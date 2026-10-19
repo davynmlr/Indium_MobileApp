@@ -20,6 +20,14 @@ export type TmdbMediaResult = {
   vote_count?: number;
 };
 
+// One season of a series. Season 0 is often "Specials".
+export type TmdbSeason = {
+  season_number: number;
+  episode_count: number;
+  air_date: string | null; // null if the season is announced but not out yet
+  name: string;
+};
+
 // Same as above, plus more info we get on the details page.
 export type TmdbMediaDetails = TmdbMediaResult & {
   genres?: { id: number; name: string }[];
@@ -28,6 +36,14 @@ export type TmdbMediaDetails = TmdbMediaResult & {
   number_of_episodes?: number;
   status?: string;
   tagline?: string;
+  // Series only:
+  seasons?: TmdbSeason[];
+  // The newest episode that is already out (null if nothing aired yet).
+  last_episode_to_air?: {
+    season_number: number;
+    episode_number: number;
+    air_date: string;
+  } | null;
 };
 
 // What TMDB sends back for a search or a list.
