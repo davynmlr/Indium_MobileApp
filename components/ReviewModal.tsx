@@ -13,7 +13,7 @@ import {
 import Ionicons from "@expo/vector-icons/Ionicons";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { colors } from "../theme/colors";
-import { getStarIcon } from "../services/reviews";
+import StarRating from "./StarRating";
 
 type Props = {
   visible: boolean;
@@ -70,24 +70,7 @@ export default function ReviewModal({ visible, title, onClose, onSubmit }: Props
           ) : null}
 
           <View style={styles.stars}>
-            {[1, 2, 3, 4, 5].map((star) => (
-              <View key={star}>
-                <Ionicons
-                  name={getStarIcon(rating, star)}
-                  size={36}
-                  color={colors.accent}
-                />
-                {/* Left half of the star gives x.5, right half gives the full star */}
-                <Pressable
-                  style={[styles.starHalf, { left: 0 }]}
-                  onPress={() => setRating(star - 0.5)}
-                />
-                <Pressable
-                  style={[styles.starHalf, { right: 0 }]}
-                  onPress={() => setRating(star)}
-                />
-              </View>
-            ))}
+            <StarRating rating={rating} onChange={setRating} />
           </View>
           <Text style={styles.ratingText}>
             {rating > 0 ? `${rating} / 5` : "Tap the stars to rate"}
@@ -155,17 +138,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   stars: {
-    flexDirection: "row",
-    justifyContent: "center",
-    gap: 8,
     marginTop: 20,
-  },
-  // Invisible button covering half of a star.
-  starHalf: {
-    position: "absolute",
-    top: 0,
-    bottom: 0,
-    width: "50%",
   },
   ratingText: {
     color: colors.textMuted,

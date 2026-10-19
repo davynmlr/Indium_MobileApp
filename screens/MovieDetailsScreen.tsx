@@ -27,7 +27,14 @@ import {
   saveWatchlist,
   subscribeToWatchlist,
 } from "../services/watchlist";
-import { addReview, getAverageRating } from "../services/reviews";
+import { addReview } from "../services/reviews";
+import {
+  getAverageRating,
+  Rating,
+  saveRating,
+  subscribeToUserRatings,
+} from "../services/ratings";
+import StarRating from "../components/StarRating";
 import {
   getAiredSeasons,
   getLatestAiredSeason,
@@ -88,6 +95,40 @@ export default function MovieDetailsScreen({ route, navigation }: Props) {
 
   useEffect(loadUserRating, [result.id, result.media_type]);
 
+  // The logged-in user's own rating of this title (0 = not rated yet).
+  const [myRatings, setMyRatings] = useState<Rating[]>([]);
+  useEffect(() => {
+    if (!uid) return;
+    return subscribeToUserRatings(uid, setMyRatings);
+  }, [uid]);
+  const myRating =
+    myRatings.find((rating) => rating.mediaKey === mediaKey)?.rating ?? 0;
+
+  // Saves the stars only (no review, so nothing in "Recent activity").
+  const rate = async (rating: number) => {
+    if (!user) {
+      navigation.navigate("Login");
+      return;
+    }
+    try {
+      await saveRating({
+        uid: user.uid,
+        mediaKey,
+        title: details.title ?? details.name ?? "Untitled",
+        poster_path: details.poster_path ?? null,
+        rating,
+        updatedAt: Date.now(),
+      });
+      // A rated movie has been watched, so it leaves the watchlist.
+      if (inWatchlist) {
+        await saveWatchlist(user.uid, removeFromWatchlist(watchlist, result));
+      }
+      loadUserRating();
+    } catch {
+      setError("Could not save your rating.");
+    }
+  };
+
   const openReview = () => {
     if (!user) {
       navigation.navigate("Login");
@@ -99,6 +140,7 @@ export default function MovieDetailsScreen({ route, navigation }: Props) {
   const submitReview = async (rating: number, comment: string, date: Date) => {
     if (!user) return;
     setReviewOpen(false);
+    const now = Date.now();
     try {
       await addReview({
         uid: user.uid,
@@ -108,8 +150,17 @@ export default function MovieDetailsScreen({ route, navigation }: Props) {
         poster_path: details.poster_path ?? null,
         rating,
         comment,
-        createdAt: Date.now(),
+        createdAt: now,
         date: date.getTime(),
+      });
+      // The review's stars also become the user's rating of this title.
+      await saveRating({
+        uid: user.uid,
+        mediaKey,
+        title: details.title ?? details.name ?? "Untitled",
+        poster_path: details.poster_path ?? null,
+        rating,
+        updatedAt: now,
       });
       // A reviewed movie has been watched, so it leaves the watchlist.
       if (inWatchlist) {
@@ -225,6 +276,13 @@ export default function MovieDetailsScreen({ route, navigation }: Props) {
         <TouchableOpacity style={styles.reviewButton} onPress={openReview}>
           <Text style={styles.watchlistButtonText}>Review</Text>
         </TouchableOpacity>
+
+        <View style={styles.rateBox}>
+          <Text style={styles.rateLabel}>
+            {myRating > 0 ? `Your rating: ${myRating} / 5` : "Rate it"}
+          </Text>
+          <StarRating rating={myRating} onChange={rate} size={30} />
+        </View>
 
         <ReviewModal
           visible={reviewOpen}
@@ -374,6 +432,15 @@ const styles = StyleSheet.create({
     marginTop: 10,
   },
   watchlistButtonText: { color: colors.text, fontSize: 15, fontWeight: "600" },
+  rateBox: {
+    backgroundColor: colors.surface,
+    borderRadius: 8,
+    paddingVertical: 12,
+    marginTop: 10,
+    alignItems: "center",
+    gap: 8,
+  },
+  rateLabel: { color: colors.textMuted, fontSize: 13, fontWeight: "600" },
   progressCard: {
     flexDirection: "row",
     alignItems: "center",

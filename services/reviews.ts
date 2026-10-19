@@ -1,12 +1,11 @@
 // This file manages the reviews of movies and series.
 // Each review is a document in the "reviews" collection.
-// A user can review the same title many times: every review is kept,
-// but only the user's LAST rating counts for the average.
+// A user can review the same title many times: every review is kept.
+// The average rating is calculated in ratings.ts.
 
 import {
   addDoc,
   collection,
-  getDocs,
   onSnapshot,
   query,
   where,
@@ -29,31 +28,6 @@ export type Review = {
 // Saves a new review in the database.
 export async function addReview(review: Review) {
   await addDoc(collection(db, "reviews"), review);
-}
-
-// Calculates the average rating of a movie/series.
-// For each user, we only keep their most recent review.
-export async function getAverageRating(mediaKey: string) {
-  const snapshot = await getDocs(
-    query(collection(db, "reviews"), where("mediaKey", "==", mediaKey)),
-  );
-
-  // uid -> last review of this user
-  const lastReviews: Record<string, Review> = {};
-  snapshot.forEach((document) => {
-    const review = document.data() as Review;
-    const previous = lastReviews[review.uid];
-    if (!previous || review.createdAt > previous.createdAt) {
-      lastReviews[review.uid] = review;
-    }
-  });
-
-  const ratings = Object.values(lastReviews).map((review) => review.rating);
-  if (ratings.length === 0) {
-    return { average: null, count: 0 };
-  }
-  const total = ratings.reduce((sum, rating) => sum + rating, 0);
-  return { average: total / ratings.length, count: ratings.length };
 }
 
 // Listens to all the reviews written by one user, newest first.

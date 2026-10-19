@@ -10,6 +10,7 @@ export type RootStackParamList = {
   Diary: { uid: string };
   UserWatchlist: { uid: string };
   MySeries: { uid: string };
+  Watched: { uid: string };
   // Profile of another user, and their followers / following list.
   UserProfile: { uid: string; username: string };
   FollowList: { uid: string; type: "followers" | "following" };

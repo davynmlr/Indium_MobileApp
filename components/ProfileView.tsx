@@ -100,6 +100,7 @@ export default function ProfileView({
     { label: "Diary", icon: "book-outline", open: () => navigation.navigate("Diary", { uid }) },
     { label: "Watchlist", icon: "bookmark-outline", open: () => navigation.navigate("UserWatchlist", { uid }) },
     { label: isOwnProfile ? "My series" : "Series", icon: "tv-outline", open: () => navigation.navigate("MySeries", { uid }) },
+    { label: "Watched", icon: "eye-outline", open: () => navigation.navigate("Watched", { uid }) },
   ] as const;
 
   const updateSlot = async (
@@ -368,7 +369,7 @@ const styles = StyleSheet.create({
   },
   linksRow: {
     flexDirection: "row",
-    gap: 10,
+    gap: 8,
     marginTop: 20,
   },
   linkButton: {
@@ -382,7 +383,7 @@ const styles = StyleSheet.create({
   },
   linkText: {
     color: colors.text,
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: "600",
   },
   sectionTitle: {
