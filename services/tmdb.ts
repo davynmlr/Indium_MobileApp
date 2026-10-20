@@ -121,6 +121,16 @@ export async function getTmdbList(
   return data.results.map((result) => ({ ...result, media_type: mediaType }));
 }
 
+// Gets the movies and series that are the most popular this week on TMDB
+// (most viewed and searched), most popular first.
+export async function getTmdbTrending(signal?: AbortSignal) {
+  const data: TmdbListResponse = await tmdbFetch(`/trending/all/week`, signal);
+  // Trending can also contain people, so we keep only movies and series.
+  return data.results.filter(
+    (result) => result.media_type === "movie" || result.media_type === "tv",
+  );
+}
+
 // Gets all the details of one movie or series (genres, runtime, seasons...).
 // Used on the details page.
 export async function getTmdbDetails(

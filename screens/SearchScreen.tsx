@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   FlatList,
@@ -14,7 +14,11 @@ import Ionicons from "@expo/vector-icons/Ionicons";
 import AppHeader from "../components/AppHeader";
 import { colors } from "../theme/colors";
 import { useTmdbSearch } from "../hooks/useTmdbSearch";
-import { getTmdbImageUrl, TmdbMediaResult } from "../services/tmdb";
+import {
+  getTmdbImageUrl,
+  getTmdbTrending,
+  TmdbMediaResult,
+} from "../services/tmdb";
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import type { RootStackParamList } from "../navigation/types";
@@ -24,8 +28,32 @@ export default function SearchScreen() {
     useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const [query, setQuery] = useState("");
   const { results, isLoading, error } = useTmdbSearch(query);
+  const isSearching = query.trim().length > 0;
 
-  const renderResult = ({ item }: { item: TmdbMediaResult }) => {
+  // Shown while the search bar is empty: the most popular titles this week.
+  const [trending, setTrending] = useState<TmdbMediaResult[]>([]);
+  const [trendingLoading, setTrendingLoading] = useState(true);
+  useEffect(() => {
+    const controller = new AbortController();
+    getTmdbTrending(controller.signal)
+      .then(setTrending)
+      .catch(() => {})
+      .finally(() => {
+        if (!controller.signal.aborted) setTrendingLoading(false);
+      });
+    return () => controller.abort();
+  }, []);
+
+  const list = isSearching ? results : trending;
+  const loading = isSearching ? isLoading : trendingLoading;
+
+  const renderResult = ({
+    item,
+    index,
+  }: {
+    item: TmdbMediaResult;
+    index: number;
+  }) => {
     const title = item.title ?? item.name ?? "Untitled";
     const date = item.release_date ?? item.first_air_date;
     const imageUrl = getTmdbImageUrl(item.poster_path);
@@ -37,6 +65,12 @@ export default function SearchScreen() {
         accessibilityRole="button"
         accessibilityLabel={`Open details for ${title}`}
       >
+        {!isSearching ? (
+          // Rank in the trending list (1, 2, 3...).
+          <View style={styles.rank}>
+            <Text style={styles.rankText}>{index + 1}</Text>
+          </View>
+        ) : null}
         {imageUrl ? (
           <Image source={{ uri: imageUrl }} style={styles.poster} />
         ) : (
@@ -48,10 +82,28 @@ export default function SearchScreen() {
           <Text style={styles.resultTitle} numberOfLines={2}>
             {title}
           </Text>
-          <Text style={styles.resultMeta}>
-            {item.media_type === "movie" ? "Movie" : "Series"}
-            {date ? ` · ${date.slice(0, 4)}` : ""}
-          </Text>
+          <View style={styles.metaRow}>
+            <View
+              style={[
+                styles.typeBadge,
+                item.media_type === "tv" && styles.typeBadgeSeries,
+              ]}
+            >
+              <Ionicons
+                name={
+                  item.media_type === "movie" ? "film-outline" : "tv-outline"
+                }
+                size={12}
+                color={colors.text}
+              />
+              <Text style={styles.typeText}>
+                {item.media_type === "movie" ? "Movie" : "Series"}
+              </Text>
+            </View>
+            {date ? (
+              <Text style={styles.resultMeta}>{date.slice(0, 4)}</Text>
+            ) : null}
+          </View>
           {item.overview ? (
             <Text style={styles.overview} numberOfLines={3}>
               {item.overview}
@@ -85,25 +137,29 @@ export default function SearchScreen() {
           />
         </View>
 
-        {isLoading ? (
+        <Text style={styles.sectionTitle}>
+          {isSearching ? "Results" : "Trending this week"}
+        </Text>
+
+        {loading ? (
           <View style={styles.statusContainer}>
             <ActivityIndicator color={colors.accent} />
           </View>
-        ) : error ? (
+        ) : isSearching && error ? (
           <View style={styles.statusContainer}>
             <Text style={styles.placeholderText}>{error}</Text>
           </View>
         ) : (
           <FlatList
-            data={results}
+            data={list}
             keyExtractor={(item) => `${item.media_type}-${item.id}`}
             renderItem={renderResult}
             contentContainerStyle={
-              results.length === 0 ? styles.emptyList : styles.resultsList
+              list.length === 0 ? styles.emptyList : styles.resultsList
             }
             ListEmptyComponent={
               <Text style={styles.placeholderText}>
-                {query.trim()
+                {isSearching
                   ? "No movies or series found"
                   : "Start typing to find a movie or series"}
               </Text>
@@ -154,8 +210,15 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
+  sectionTitle: {
+    color: colors.textMuted,
+    fontSize: 13,
+    fontWeight: "600",
+    textTransform: "uppercase",
+    marginTop: 18,
+  },
   resultsList: {
-    paddingTop: 16,
+    paddingTop: 10,
     paddingBottom: 24,
   },
   emptyList: {
@@ -192,10 +255,43 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "700",
   },
-  resultMeta: {
+  rank: {
+    width: 34,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  rankText: {
     color: colors.accent,
+    fontSize: 20,
+    fontWeight: "800",
+  },
+  metaRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginTop: 6,
+  },
+  typeBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    backgroundColor: colors.accent,
+    borderRadius: 10,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+  },
+  // Series get a different color, to tell them apart from movies at a glance.
+  typeBadgeSeries: {
+    backgroundColor: "#3d6a7a",
+  },
+  typeText: {
+    color: colors.text,
+    fontSize: 11,
+    fontWeight: "700",
+  },
+  resultMeta: {
+    color: colors.textMuted,
     fontSize: 13,
-    marginTop: 5,
   },
   overview: {
     color: colors.textMuted,
