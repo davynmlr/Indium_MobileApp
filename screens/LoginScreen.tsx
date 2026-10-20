@@ -14,6 +14,7 @@ import {
   updateProfile,
 } from "firebase/auth";
 import { auth } from "../services/firebase";
+import { syncUsernameEmail } from "../services/account";
 import {
   USERNAME_REGEX,
   claimUsername,
@@ -84,7 +85,13 @@ export default function LoginScreen({ navigation }: any) {
         return;
       }
     }
-    await signInWithEmailAndPassword(auth, loginEmail, password);
+    const { user } = await signInWithEmailAndPassword(
+      auth,
+      loginEmail,
+      password,
+    );
+    // After an email change, save the new email for "log in with username".
+    await syncUsernameEmail(user).catch(() => {});
     navigation.popTo("Main", { screen: "Profile" });
   };
 

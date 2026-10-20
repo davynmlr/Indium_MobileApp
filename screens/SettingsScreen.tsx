@@ -8,6 +8,9 @@ import {
   StyleSheet,
 } from "react-native";
 import { signOut } from "firebase/auth";
+import Ionicons from "@expo/vector-icons/Ionicons";
+import AccountEditModal from "../components/AccountEditModal";
+import { syncUsernameEmail } from "../services/account";
 import { auth } from "../services/firebase";
 import { useAuth } from "../hooks/useAuth";
 import {
@@ -22,6 +25,13 @@ export default function SettingsScreen({ navigation }: any) {
   const [photo, setPhoto] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  // Which account window is open: "password", "email", or null.
+  const [editing, setEditing] = useState<"password" | "email" | null>(null);
+
+  // If the email was changed (link clicked), save it for "log in with username".
+  useEffect(() => {
+    if (user) syncUsernameEmail(user).catch(() => {});
+  }, [user]);
 
   const uid = user?.uid;
   useEffect(() => {
@@ -110,6 +120,39 @@ export default function SettingsScreen({ navigation }: any) {
         <Text style={styles.muted}>{user?.email}</Text>
       </View>
 
+      <Text style={styles.label}>Security</Text>
+      <View style={[styles.card, styles.listCard]}>
+        <TouchableOpacity
+          style={styles.row}
+          onPress={() => setEditing("email")}
+        >
+          <Ionicons name="mail-outline" size={20} color={colors.accent} />
+          <Text style={styles.rowText}>Change email</Text>
+          <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
+        </TouchableOpacity>
+        <View style={styles.separator} />
+        <TouchableOpacity
+          style={styles.row}
+          onPress={() => setEditing("password")}
+        >
+          <Ionicons
+            name="lock-closed-outline"
+            size={20}
+            color={colors.accent}
+          />
+          <Text style={styles.rowText}>Change password</Text>
+          <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
+        </TouchableOpacity>
+      </View>
+
+      {user ? (
+        <AccountEditModal
+          mode={editing}
+          user={user}
+          onClose={() => setEditing(null)}
+        />
+      ) : null}
+
       <TouchableOpacity style={styles.button} onPress={handleLogOut}>
         <Text style={styles.buttonText}>Log Out</Text>
       </TouchableOpacity>
@@ -157,6 +200,18 @@ const styles = StyleSheet.create({
   photoActions: { flex: 1, gap: 10, alignItems: "flex-start" },
   link: { color: colors.accent, fontSize: 16, fontWeight: "600" },
   value: { color: colors.text, fontSize: 16, fontWeight: "600" },
+  listCard: { paddingVertical: 0 },
+  row: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    paddingVertical: 14,
+  },
+  rowText: { flex: 1, color: colors.text, fontSize: 15 },
+  separator: {
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: colors.border,
+  },
   muted: { color: colors.textMuted, fontSize: 14, marginTop: 2 },
   error: { color: "#ff6b6b", marginTop: -16, marginBottom: 24 },
   button: {
