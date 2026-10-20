@@ -28,6 +28,16 @@ export type TmdbSeason = {
   name: string;
 };
 
+// One video (trailer, teaser...) of a movie or series.
+// For YouTube videos, `key` is the id in the link: youtube.com/watch?v={key}
+export type TmdbVideo = {
+  key: string;
+  site: string; // "YouTube", "Vimeo"...
+  type: string; // "Trailer", "Teaser", "Clip"...
+  name: string;
+  official: boolean;
+};
+
 // Same as above, plus more info we get on the details page.
 export type TmdbMediaDetails = TmdbMediaResult & {
   genres?: { id: number; name: string }[];
@@ -44,6 +54,8 @@ export type TmdbMediaDetails = TmdbMediaResult & {
     episode_number: number;
     air_date: string;
   } | null;
+  // Trailers and other videos (asked with append_to_response=videos).
+  videos?: { results: TmdbVideo[] };
 };
 
 // What TMDB sends back for a search or a list.
@@ -116,7 +128,41 @@ export async function getTmdbDetails(
   id: number,
   signal?: AbortSignal,
 ): Promise<TmdbMediaDetails> {
-  return tmdbFetch(`/${mediaType}/${id}`, signal);
+  // The videos come in the same request, so we don't need a second call.
+  return tmdbFetch(`/${mediaType}/${id}?append_to_response=videos&include_video_language=en,null`, signal);
+}
+
+// Genre names of each title, kept in memory so each title is asked only once.
+const genresCache: Record<string, Promise<string[]>> = {};
+
+// Gets the genre names of one movie or series (for example ["Action", "Drama"]).
+export function getTmdbGenres(media: TmdbMediaResult): Promise<string[]> {
+  const key = getMediaKey(media);
+  if (!genresCache[key]) {
+    genresCache[key] = tmdbFetch(`/${media.media_type}/${media.id}`)
+      .then((details: TmdbMediaDetails) =>
+        (details.genres ?? []).map((genre) => genre.name),
+      )
+      .catch((error) => {
+        delete genresCache[key]; // try again next time
+        throw error;
+      });
+  }
+  return genresCache[key];
+}
+
+// Finds the best trailer on YouTube: an official trailer first,
+// then any trailer, then a teaser. Returns null if there is none.
+export function getTrailer(details: TmdbMediaDetails): TmdbVideo | null {
+  const videos = (details.videos?.results ?? []).filter(
+    (video) => video.site === "YouTube",
+  );
+  return (
+    videos.find((v) => v.type === "Trailer" && v.official) ??
+    videos.find((v) => v.type === "Trailer") ??
+    videos.find((v) => v.type === "Teaser") ??
+    null
+  );
 }
 
 // Builds the full link of an image from its path.

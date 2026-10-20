@@ -11,11 +11,13 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Ionicons from "@expo/vector-icons/Ionicons";
+import * as Speech from "expo-speech";
 
 import {
   getTmdbDetails,
   getTmdbImageUrl,
   getMediaKey,
+  getTrailer,
   TmdbMediaDetails,
   TmdbMediaResult,
   toSavedMedia,
@@ -46,6 +48,7 @@ import {
 } from "../services/seriesProgress";
 import ReviewModal from "../components/ReviewModal";
 import ProgressModal from "../components/ProgressModal";
+import TrailerModal from "../components/TrailerModal";
 import type { RootStackParamList } from "../navigation/types";
 import { colors } from "../theme/colors";
 
@@ -283,6 +286,41 @@ export default function MovieDetailsScreen({ route, navigation }: Props) {
   const date = details.release_date ?? details.first_air_date;
   const posterUrl = getTmdbImageUrl(details.poster_path, "w500");
   const mediaLabel = result.media_type === "movie" ? "Movie" : "Series";
+  const trailer = getTrailer(details);
+  const [trailerOpen, setTrailerOpen] = useState(false);
+
+  // Reads the synopsis aloud. Tap again to stop.
+  const [speaking, setSpeaking] = useState(false);
+  const toggleSpeech = () => {
+    if (speaking) {
+      Speech.stop();
+      setSpeaking(false);
+      return;
+    }
+    setSpeaking(true);
+    Speech.speak(`${title}. ${details.overview}`, {
+      language: "en-US",
+      onDone: () => setSpeaking(false),
+      onStopped: () => setSpeaking(false),
+      onError: () => setSpeaking(false),
+    });
+  };
+
+  // Stop reading when the page closes or shows another title.
+  useEffect(() => {
+    return () => {
+      Speech.stop();
+      setSpeaking(false);
+    };
+  }, [result.id, result.media_type]);
+
+  const openTrailer = () => {
+    if (speaking) {
+      Speech.stop();
+      setSpeaking(false);
+    }
+    setTrailerOpen(true);
+  };
 
   return (
     <SafeAreaView style={styles.safeArea} edges={["bottom"]}>
@@ -428,7 +466,24 @@ export default function MovieDetailsScreen({ route, navigation }: Props) {
           ) : null}
         </View>
 
-        <Text style={styles.sectionTitle}>Overview</Text>
+        <View style={styles.overviewHeader}>
+          <Text style={styles.sectionTitle}>Overview</Text>
+          {details.overview ? (
+            <TouchableOpacity
+              style={[styles.listenButton, speaking && styles.listenButtonActive]}
+              onPress={toggleSpeech}
+              accessibilityRole="button"
+              accessibilityLabel={speaking ? "Stop reading" : "Listen to the synopsis"}
+            >
+              <Ionicons
+                name={speaking ? "stop" : "volume-high-outline"}
+                size={16}
+                color={colors.text}
+              />
+              <Text style={styles.listenText}>{speaking ? "Stop" : "Listen"}</Text>
+            </TouchableOpacity>
+          ) : null}
+        </View>
         <Text style={styles.overview}>
           {details.overview || "No overview is available for this title."}
         </Text>
@@ -441,6 +496,35 @@ export default function MovieDetailsScreen({ route, navigation }: Props) {
               </View>
             ))}
           </View>
+        ) : null}
+
+        {trailer ? (
+          <>
+            <Text style={styles.sectionTitle}>Trailer</Text>
+            <TouchableOpacity
+              style={styles.trailer}
+              onPress={openTrailer}
+              accessibilityRole="button"
+              accessibilityLabel={`Play the trailer of ${title}`}
+            >
+              <Image
+                source={{ uri: `https://img.youtube.com/vi/${trailer.key}/hqdefault.jpg` }}
+                style={styles.trailerImage}
+              />
+              <View style={styles.trailerPlay}>
+                <Ionicons name="play" size={30} color={colors.text} />
+              </View>
+            </TouchableOpacity>
+            <Text style={styles.trailerName} numberOfLines={1}>
+              {trailer.name}
+            </Text>
+            <TrailerModal
+              visible={trailerOpen}
+              trailer={trailer}
+              title={title}
+              onClose={() => setTrailerOpen(false)}
+            />
+          </>
         ) : null}
 
         {error ? <Text style={styles.error}>{error}</Text> : null}
@@ -481,6 +565,42 @@ const styles = StyleSheet.create({
   genreRow: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 18 },
   genre: { backgroundColor: colors.border, borderRadius: 6, paddingHorizontal: 10, paddingVertical: 6 },
   genreText: { color: colors.text, fontSize: 12 },
+  overviewHeader: {
+    flexDirection: "row",
+    alignItems: "flex-end",
+    justifyContent: "space-between",
+  },
+  listenButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    backgroundColor: colors.surface,
+    borderRadius: 16,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+  },
+  listenButtonActive: { backgroundColor: colors.accent },
+  listenText: { color: colors.text, fontSize: 13, fontWeight: "600" },
+  trailer: {
+    marginTop: 10,
+    borderRadius: 10,
+    overflow: "hidden",
+    backgroundColor: colors.surface,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  trailerImage: { width: "100%", aspectRatio: 16 / 9 },
+  trailerPlay: {
+    position: "absolute",
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "rgba(0, 0, 0, 0.6)",
+    paddingLeft: 4, // the play triangle looks centered this way
+  },
+  trailerName: { color: colors.textMuted, fontSize: 13, marginTop: 6 },
   error: { color: colors.textMuted, fontSize: 13, marginTop: 20 },
   loader: { marginTop: 20 },
   watchlistButton: {
