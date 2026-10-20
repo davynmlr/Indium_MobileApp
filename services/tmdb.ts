@@ -139,7 +139,10 @@ export async function getTmdbDetails(
   signal?: AbortSignal,
 ): Promise<TmdbMediaDetails> {
   // The videos come in the same request, so we don't need a second call.
-  return tmdbFetch(`/${mediaType}/${id}?append_to_response=videos&include_video_language=en,null`, signal);
+  return tmdbFetch(
+    `/${mediaType}/${id}?append_to_response=videos&include_video_language=en,null`,
+    signal,
+  );
 }
 
 // Genre names of each title, kept in memory so each title is asked only once.
@@ -200,3 +203,21 @@ export function toSavedMedia(media: TmdbMediaResult): TmdbMediaResult {
 // Example: "movie-123" or "tv-456". Two titles with the same key are the same title.
 export const getMediaKey = (media: TmdbMediaResult) =>
   `${media.media_type}-${media.id}`;
+
+// The opposite of getMediaKey: turns a saved review or rating back into a
+// movie/series, to open its details page.
+// mediaKey looks like "movie-123", so we split it to get the type and the id.
+export function mediaFromKey(saved: {
+  mediaKey: string;
+  title: string;
+  poster_path: string | null;
+}): TmdbMediaResult {
+  const [mediaType, id] = saved.mediaKey.split("-");
+  return {
+    id: Number(id),
+    media_type: mediaType as TmdbMediaResult["media_type"],
+    title: saved.title,
+    poster_path: saved.poster_path,
+    overview: "",
+  };
+}

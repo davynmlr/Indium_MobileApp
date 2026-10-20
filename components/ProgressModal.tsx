@@ -11,6 +11,7 @@ import {
   View,
 } from "react-native";
 import Ionicons from "@expo/vector-icons/Ionicons";
+import Chip from "./Chip";
 import { colors } from "../theme/colors";
 import type { TmdbSeason } from "../services/tmdb";
 
@@ -62,7 +63,12 @@ export default function ProgressModal({
   };
 
   return (
-    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
+    <Modal
+      visible={visible}
+      transparent
+      animationType="fade"
+      onRequestClose={onClose}
+    >
       <View style={styles.overlay}>
         <View style={styles.box}>
           <View style={styles.header}>
@@ -87,6 +93,8 @@ export default function ProgressModal({
                       label={`S${item.season_number}`}
                       active={item.season_number === season}
                       onPress={() => pickSeason(item.season_number)}
+                      variant="background"
+                      size="large"
                     />
                   ))}
                 </View>
@@ -101,6 +109,8 @@ export default function ProgressModal({
                       label={`${number}`}
                       active={number === episode}
                       onPress={() => setEpisode(number)}
+                      variant="background"
+                      size="large"
                     />
                   ))}
                 </View>
@@ -138,27 +148,10 @@ export default function ProgressModal({
   );
 }
 
-// A small round button (one season or one episode).
-function Chip({
-  label,
-  active,
-  onPress,
-}: {
-  label: string;
-  active: boolean;
-  onPress: () => void;
-}) {
-  return (
-    <Pressable style={[styles.chip, active && styles.chipActive]} onPress={onPress}>
-      <Text style={styles.chipText}>{label}</Text>
-    </Pressable>
-  );
-}
-
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.6)",
+    backgroundColor: colors.overlay,
     justifyContent: "center",
     padding: 24,
   },
@@ -186,16 +179,6 @@ const styles = StyleSheet.create({
   row: { flexDirection: "row", gap: 8 },
   episodes: { maxHeight: 180 },
   grid: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
-  chip: {
-    backgroundColor: colors.background,
-    borderRadius: 18,
-    minWidth: 44,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    alignItems: "center",
-  },
-  chipActive: { backgroundColor: colors.accent },
-  chipText: { color: colors.text, fontSize: 14, fontWeight: "600" },
   button: {
     backgroundColor: colors.accent,
     borderRadius: 8,

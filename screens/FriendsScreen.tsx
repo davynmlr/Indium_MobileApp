@@ -16,7 +16,7 @@ import UserRow from "../components/UserRow";
 import ReviewItem from "../components/ReviewItem";
 import { searchUsers } from "../services/usernames";
 import type { UserSummary } from "../services/follows";
-import { reviewToMedia } from "../services/reviews";
+import { mediaFromKey } from "../services/tmdb";
 import { useFriendsActivity } from "../hooks/useFriendsActivity";
 import { colors } from "../theme/colors";
 
@@ -112,7 +112,7 @@ export default function FriendsScreen({ navigation }: any) {
                 })
               }
               onPress={() =>
-                navigation.navigate("MovieDetails", { result: reviewToMedia(item) })
+                navigation.navigate("MovieDetails", { result: mediaFromKey(item) })
               }
             />
           )}

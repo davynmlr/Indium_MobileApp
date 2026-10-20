@@ -14,12 +14,11 @@ import {
   updateProfile,
 } from "firebase/auth";
 import { auth } from "../services/firebase";
-import { syncUsernameEmail } from "../services/account";
 import {
   USERNAME_REGEX,
   claimUsername,
-  getEmailForUsername,
   isUsernameTaken,
+  removeEmailFromUsername,
 } from "../services/usernames";
 import { colors } from "../theme/colors";
 
@@ -60,7 +59,7 @@ export default function LoginScreen({ navigation }: any) {
       password,
     );
     try {
-      await claimUsername(name, user.uid, email.trim());
+      await claimUsername(name, user.uid);
       await updateProfile(user, { displayName: name });
     } catch (e: any) {
       // Don't leave an account without a username behind.
@@ -76,22 +75,15 @@ export default function LoginScreen({ navigation }: any) {
   };
 
   const login = async () => {
-    const identifier = email.trim();
-    let loginEmail: string | null = identifier;
-    if (!identifier.includes("@")) {
-      loginEmail = await getEmailForUsername(identifier);
-      if (!loginEmail) {
-        setError("Incorrect username/email or password.");
-        return;
-      }
-    }
+    // Login is by email only: usernames are public, emails stay private.
     const { user } = await signInWithEmailAndPassword(
       auth,
-      loginEmail,
+      email.trim(),
       password,
     );
-    // After an email change, save the new email for "log in with username".
-    await syncUsernameEmail(user).catch(() => {});
+    // Old accounts: remove the email from the public username document.
+    // Not awaited: the user doesn't have to wait for this cleanup.
+    removeEmailFromUsername(user).catch(() => {});
     navigation.popTo("Main", { screen: "Profile" });
   };
 
@@ -114,7 +106,7 @@ export default function LoginScreen({ navigation }: any) {
       } else if (e.code === "auth/weak-password") {
         setError("Password should be at least 6 characters.");
       } else if (e.code === "auth/invalid-credential") {
-        setError("Incorrect username/email or password.");
+        setError("Incorrect email or password.");
       } else {
         setError("Something went wrong. Please try again.");
       }
@@ -147,12 +139,13 @@ export default function LoginScreen({ navigation }: any) {
       ) : null}
       <TextInput
         style={styles.input}
-        placeholder={isRegister ? "Email" : "Email or username"}
+        placeholder="Email address"
         placeholderTextColor={colors.placeholder}
         value={email}
         onChangeText={setEmail}
         autoCapitalize="none"
         autoCorrect={false}
+        keyboardType="email-address"
       />
       <TextInput
         style={styles.input}
@@ -225,10 +218,10 @@ const styles = StyleSheet.create({
     marginTop: 24,
     textDecorationLine: "underline",
   },
-  error: { color: "#ff6b6b", textAlign: "center", marginBottom: 8 },
-  notice: { color: "#51cf66", textAlign: "center", marginBottom: 8 },
+  error: { color: colors.error, textAlign: "center", marginBottom: 8 },
+  notice: { color: colors.success, textAlign: "center", marginBottom: 8 },
   usernameTaken: {
-    color: "#ff9f43",
+    color: colors.warning,
     fontSize: 12,
     marginTop: -8,
     marginBottom: 12,

@@ -186,7 +186,7 @@ export default function AccountEditModal({ mode, user, onClose }: Props) {
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.6)",
+    backgroundColor: colors.overlay,
     justifyContent: "center",
     padding: 24,
   },
@@ -212,7 +212,7 @@ const styles = StyleSheet.create({
     fontSize: 15,
     marginBottom: 10,
   },
-  error: { color: "#ff6b6b", marginBottom: 10 },
+  error: { color: colors.error, marginBottom: 10 },
   successRow: { flexDirection: "row", gap: 10, alignItems: "flex-start" },
   successText: { flex: 1, color: colors.text, fontSize: 14, lineHeight: 20 },
   button: {

@@ -1,18 +1,12 @@
 import { useEffect, useState } from "react";
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  StyleSheet,
-  ScrollView,
-} from "react-native";
+import { View, Text, StyleSheet, ScrollView } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import AppHeader from "../components/AppHeader";
 import { useAuth } from "../hooks/useAuth";
 import LoggedOutView from "../components/LoggedOutView";
 import PosterGrid from "../components/PosterGrid";
 import SpinModal from "../components/SpinModal";
-import Ionicons from "@expo/vector-icons/Ionicons";
+import Chip from "../components/Chip";
 import { subscribeToWatchlist } from "../services/watchlist";
 import { getMediaKey, getTmdbGenres, TmdbMediaResult } from "../services/tmdb";
 import { colors } from "../theme/colors";
@@ -123,15 +117,7 @@ export default function WatchlistScreen({ route, navigation }: any) {
   }
 
   const chip = (label: string, active: boolean, onPress: () => void) => (
-    <TouchableOpacity
-      key={label}
-      style={[styles.filterButton, active && styles.filterButtonActive]}
-      onPress={onPress}
-      accessibilityRole="button"
-      accessibilityState={{ selected: active }}
-    >
-      <Text style={styles.filterText}>{label}</Text>
-    </TouchableOpacity>
+    <Chip key={label} label={label} active={active} onPress={onPress} />
   );
 
   return (
@@ -149,15 +135,13 @@ export default function WatchlistScreen({ route, navigation }: any) {
           ),
         )}
         {byType.length > 0 ? (
-          <TouchableOpacity
-            style={[styles.filterButton, styles.spinButton]}
+          <Chip
+            label="Spin"
+            icon="dice"
+            style={styles.spinButton}
             onPress={() => setSpinOpen(true)}
-            accessibilityRole="button"
             accessibilityLabel="Spin to pick a random title"
-          >
-            <Ionicons name="dice" size={14} color={colors.text} />
-            <Text style={styles.filterText}>Spin</Text>
-          </TouchableOpacity>
+          />
         ) : null}
       </View>
 
@@ -251,26 +235,10 @@ const styles = StyleSheet.create({
     textTransform: "uppercase",
     marginRight: 2,
   },
-  filterButton: {
-    backgroundColor: colors.surface,
-    borderRadius: 16,
-    paddingHorizontal: 14,
-    paddingVertical: 6,
-  },
+  // Pushed to the right of the row.
   spinButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
     marginLeft: "auto",
     borderWidth: 1,
     borderColor: colors.accent,
-  },
-  filterButtonActive: {
-    backgroundColor: colors.accent,
-  },
-  filterText: {
-    color: colors.text,
-    fontSize: 13,
-    fontWeight: "600",
   },
 });

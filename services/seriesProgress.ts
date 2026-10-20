@@ -2,13 +2,9 @@
 // It is saved in the database in the document users/{uid}, in the field "seriesProgress".
 // It also finds the series that got a new season since the user last updated them.
 
-import { deleteField, doc, onSnapshot, setDoc } from "firebase/firestore";
-import { db } from "./firebase";
-import {
-  getTmdbDetails,
-  TmdbMediaDetails,
-  TmdbMediaResult,
-} from "./tmdb";
+import { deleteField, setDoc } from "firebase/firestore";
+import { subscribeToUserDoc, userDocRef } from "./userDoc";
+import { getTmdbDetails, TmdbMediaDetails, TmdbMediaResult } from "./tmdb";
 
 export type SeriesProgress = {
   media: TmdbMediaResult; // small copy of the series (title, poster...)
@@ -38,9 +34,9 @@ export function subscribeToSeriesProgress(
   uid: string,
   onChange: (progress: SeriesProgressMap) => void,
 ) {
-  return onSnapshot(doc(db, "users", uid), (snapshot) => {
-    onChange(snapshot.data()?.seriesProgress ?? {});
-  });
+  return subscribeToUserDoc(uid, (data) =>
+    onChange(data?.seriesProgress ?? {}),
+  );
 }
 
 // Saves the progress of one series.
@@ -51,7 +47,7 @@ export async function saveSeriesProgress(
   progress: SeriesProgress,
 ) {
   await setDoc(
-    doc(db, "users", uid),
+    userDocRef(uid),
     { seriesProgress: { [mediaKey]: progress } },
     { merge: true },
   );
@@ -60,7 +56,7 @@ export async function saveSeriesProgress(
 // Removes the progress of one series.
 export async function removeSeriesProgress(uid: string, mediaKey: string) {
   await setDoc(
-    doc(db, "users", uid),
+    userDocRef(uid),
     { seriesProgress: { [mediaKey]: deleteField() } },
     { merge: true },
   );

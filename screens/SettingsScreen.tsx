@@ -10,7 +10,7 @@ import {
 import { signOut } from "firebase/auth";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import AccountEditModal from "../components/AccountEditModal";
-import { syncUsernameEmail } from "../services/account";
+import { removeEmailFromUsername } from "../services/usernames";
 import { auth } from "../services/firebase";
 import { useAuth } from "../hooks/useAuth";
 import {
@@ -28,9 +28,9 @@ export default function SettingsScreen({ navigation }: any) {
   // Which account window is open: "password", "email", or null.
   const [editing, setEditing] = useState<"password" | "email" | null>(null);
 
-  // If the email was changed (link clicked), save it for "log in with username".
+  // Old accounts: remove the email from the public username document.
   useEffect(() => {
-    if (user) syncUsernameEmail(user).catch(() => {});
+    if (user) removeEmailFromUsername(user).catch(() => {});
   }, [user]);
 
   const uid = user?.uid;
@@ -213,7 +213,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.border,
   },
   muted: { color: colors.textMuted, fontSize: 14, marginTop: 2 },
-  error: { color: "#ff6b6b", marginTop: -16, marginBottom: 24 },
+  error: { color: colors.error, marginTop: -16, marginBottom: 24 },
   button: {
     backgroundColor: colors.accent,
     borderRadius: 8,

@@ -16,7 +16,6 @@ import {
   where,
 } from "firebase/firestore";
 import { db } from "./firebase";
-import type { TmdbMediaResult } from "./tmdb";
 
 export type Review = {
   id?: string; // name of the document in the database (only when read from it)
@@ -109,19 +108,6 @@ export function subscribeToReviewsOfUsers(
     );
   }
   return () => stops.forEach((stop) => stop());
-}
-
-// Turns a review back into a movie/series, to open its details page.
-// mediaKey looks like "movie-123", so we split it to get the type and the id.
-export function reviewToMedia(review: Review): TmdbMediaResult {
-  const [mediaType, id] = review.mediaKey.split("-");
-  return {
-    id: Number(id),
-    media_type: mediaType as TmdbMediaResult["media_type"],
-    title: review.title,
-    poster_path: review.poster_path,
-    overview: "",
-  };
 }
 
 // Gives the icon to show for one star, depending on the rating.

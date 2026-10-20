@@ -282,7 +282,7 @@ const styles = StyleSheet.create({
   },
   // Series get a different color, to tell them apart from movies at a glance.
   typeBadgeSeries: {
-    backgroundColor: "#3d6a7a",
+    backgroundColor: colors.series,
   },
   typeText: {
     color: colors.text,

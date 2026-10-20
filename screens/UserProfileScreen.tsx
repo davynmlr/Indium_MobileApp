@@ -101,5 +101,5 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: "600",
   },
-  error: { color: "#ff6b6b", marginTop: 8 },
+  error: { color: colors.error, marginTop: 8 },
 });

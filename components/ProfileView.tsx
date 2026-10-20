@@ -20,7 +20,6 @@ import ReviewItem from "./ReviewItem";
 import { useReviewActions } from "../hooks/useReviewActions";
 import {
   Review,
-  reviewToMedia,
   subscribeToUserReviews,
 } from "../services/reviews";
 import {
@@ -38,6 +37,7 @@ import { subscribeToProfilePhoto } from "../services/profilePhoto";
 import { Rating, subscribeToUserRatings } from "../services/ratings";
 import {
   getTmdbImageUrl,
+  mediaFromKey,
   toSavedMedia,
   TmdbMediaResult,
 } from "../services/tmdb";
@@ -318,7 +318,7 @@ export default function ProfileView({
               review={review}
               onPress={() =>
                 navigation.navigate("MovieDetails", {
-                  result: reviewToMedia(review),
+                  result: mediaFromKey(review),
                 })
               }
               onEdit={isOwnProfile ? () => startEdit(review) : undefined}
@@ -470,7 +470,7 @@ const styles = StyleSheet.create({
     borderRadius: 11,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "rgba(0, 0, 0, 0.7)",
+    backgroundColor: colors.overlayStrong,
   },
   pressed: {
     opacity: 0.75,
@@ -486,5 +486,5 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
     fontSize: 14,
   },
-  error: { color: "#ff6b6b", marginTop: 8 },
+  error: { color: colors.error, marginTop: 8 },
 });

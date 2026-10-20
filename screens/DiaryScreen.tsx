@@ -6,9 +6,9 @@ import { useAuth } from "../hooks/useAuth";
 import { useReviewActions } from "../hooks/useReviewActions";
 import {
   Review,
-  reviewToMedia,
   subscribeToUserReviews,
 } from "../services/reviews";
+import { mediaFromKey } from "../services/tmdb";
 import type { RootStackParamList } from "../navigation/types";
 import { colors } from "../theme/colors";
 
@@ -40,7 +40,7 @@ export default function DiaryScreen({ route, navigation }: Props) {
             review={item}
             onPress={() =>
               navigation.navigate("MovieDetails", {
-                result: reviewToMedia(item),
+                result: mediaFromKey(item),
               })
             }
             onEdit={isMine ? () => startEdit(item) : undefined}

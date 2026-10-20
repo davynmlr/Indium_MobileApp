@@ -16,11 +16,12 @@ import {
   getTmdbImageUrl,
   getTmdbList,
   TmdbMediaResult,
+  mediaFromKey,
 } from "../../services/tmdb";
 import type { NewSeason } from "../../services/seriesProgress";
 import { useNewSeasons } from "../../hooks/useNewSeasons";
 import { useFriendsActivity } from "../../hooks/useFriendsActivity";
-import { Review, reviewToMedia } from "../../services/reviews";
+import type { Review } from "../../services/reviews";
 import type { RootStackParamList } from "../../navigation/types";
 import { colors } from "../../theme/colors";
 
@@ -164,7 +165,7 @@ export default function MediaListScreen({
         key={`${review.uid}-${review.mediaKey}-${review.createdAt}`}
         style={({ pressed }) => [styles.card, pressed && styles.pressed]}
         onPress={() =>
-          navigation.navigate("MovieDetails", { result: reviewToMedia(review) })
+          navigation.navigate("MovieDetails", { result: mediaFromKey(review) })
         }
         accessibilityRole="button"
         accessibilityLabel={`${review.username} rated ${review.title} ${review.rating} out of 5`}

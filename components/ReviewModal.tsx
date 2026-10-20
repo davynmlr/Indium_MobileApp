@@ -112,7 +112,7 @@ export default function ReviewModal({
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.6)",
+    backgroundColor: colors.overlay,
     justifyContent: "center",
     padding: 24,
   },

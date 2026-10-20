@@ -117,7 +117,7 @@ export default function TrailerModal({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#000",
+    backgroundColor: colors.black,
     paddingHorizontal: 16,
   },
   header: {
@@ -139,7 +139,7 @@ const styles = StyleSheet.create({
     width: "100%",
     aspectRatio: 16 / 9,
     flex: 0,
-    backgroundColor: "#000",
+    backgroundColor: colors.black,
   },
   cinemaRow: {
     flexDirection: "row",

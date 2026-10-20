@@ -14,6 +14,7 @@ import {
   View,
 } from "react-native";
 import Ionicons from "@expo/vector-icons/Ionicons";
+import Chip from "./Chip";
 import {
   getMediaKey,
   getTmdbImageUrl,
@@ -114,16 +115,14 @@ export default function SpinModal({
   const year = (shown?.release_date ?? shown?.first_air_date ?? "").slice(0, 4);
 
   const chip = (label: string, active: boolean, onPress: () => void) => (
-    <TouchableOpacity
+    <Chip
       key={label}
-      style={[styles.chip, active && styles.chipActive]}
+      label={label}
+      active={active}
       onPress={onPress}
       disabled={spinning}
-      accessibilityRole="button"
-      accessibilityState={{ selected: active }}
-    >
-      <Text style={styles.chipText}>{label}</Text>
-    </TouchableOpacity>
+      variant="background"
+    />
   );
 
   return (
@@ -223,7 +222,7 @@ export default function SpinModal({
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.7)",
+    backgroundColor: colors.overlayStrong,
     justifyContent: "center",
     padding: 24,
   },
@@ -240,14 +239,6 @@ const styles = StyleSheet.create({
   title: { color: colors.text, fontSize: 18, fontWeight: "700" },
   chipScroll: { flexGrow: 0, marginTop: 14, marginHorizontal: -16 },
   chipRow: { gap: 8, paddingHorizontal: 16 },
-  chip: {
-    backgroundColor: colors.background,
-    borderRadius: 16,
-    paddingHorizontal: 14,
-    paddingVertical: 6,
-  },
-  chipActive: { backgroundColor: colors.accent },
-  chipText: { color: colors.text, fontSize: 13, fontWeight: "600" },
   stage: { alignItems: "center", marginTop: 18 },
   posterBox: { width: 160 },
   poster: {

@@ -6,14 +6,14 @@ import {
   ScrollView,
   StyleSheet,
   Text,
-  TouchableOpacity,
   View,
 } from "react-native";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
+import Chip from "../components/Chip";
 import { Rating, subscribeToUserRatings } from "../services/ratings";
 import { getStarIcon } from "../services/reviews";
-import { getTmdbImageUrl, TmdbMediaResult } from "../services/tmdb";
+import { getTmdbImageUrl, mediaFromKey } from "../services/tmdb";
 import type { RootStackParamList } from "../navigation/types";
 import { colors } from "../theme/colors";
 
@@ -41,19 +41,6 @@ const ratingFilters: (number | null)[] = [
   0,
 ];
 
-// Turns a rating back into a movie/series, to open its details page.
-// mediaKey looks like "movie-123", so we split it to get the type and the id.
-const ratingToMedia = (rating: Rating): TmdbMediaResult => {
-  const [mediaType, id] = rating.mediaKey.split("-");
-  return {
-    id: Number(id),
-    media_type: mediaType as TmdbMediaResult["media_type"],
-    title: rating.title,
-    poster_path: rating.poster_path,
-    overview: "",
-  };
-};
-
 // Everything a user has watched (rated or reviewed), with their rating.
 // route.params.uid says whose list to show.
 export default function WatchedScreen({ route, navigation }: Props) {
@@ -74,16 +61,12 @@ export default function WatchedScreen({ route, navigation }: Props) {
     <View style={styles.container}>
       <View style={styles.filterRow}>
         {filters.map((option) => (
-          <TouchableOpacity
+          <Chip
             key={option.value}
-            style={[
-              styles.filterButton,
-              filter === option.value && styles.filterButtonActive,
-            ]}
+            label={option.label}
+            active={filter === option.value}
             onPress={() => setFilter(option.value)}
-          >
-            <Text style={styles.filterText}>{option.label}</Text>
-          </TouchableOpacity>
+          />
         ))}
       </View>
 
@@ -96,16 +79,20 @@ export default function WatchedScreen({ route, navigation }: Props) {
         {ratingFilters.map((value) => {
           const active = ratingFilter === value;
           return (
-            <TouchableOpacity
+            <Chip
               key={String(value)}
-              style={[
-                styles.filterButton,
-                styles.ratingButton,
-                active && styles.filterButtonActive,
-              ]}
+              label={
+                value === null
+                  ? "Any rating"
+                  : value === 0
+                    ? "No rating"
+                    : `${value}`
+              }
+              icon={value === null ? undefined : value === 0 ? "eye" : "star"}
+              // Stars are purple, except on the selected (purple) chip.
+              iconColor={value && !active ? colors.accent : colors.text}
+              active={active}
               onPress={() => setRatingFilter(value)}
-              accessibilityRole="button"
-              accessibilityState={{ selected: active }}
               accessibilityLabel={
                 value === null
                   ? "Any rating"
@@ -113,25 +100,7 @@ export default function WatchedScreen({ route, navigation }: Props) {
                     ? "Not rated"
                     : `Rated ${value} stars`
               }
-            >
-              {value === null ? (
-                <Text style={styles.filterText}>Any rating</Text>
-              ) : value === 0 ? (
-                <>
-                  <Ionicons name="eye" size={12} color={colors.text} />
-                  <Text style={styles.filterText}>No rating</Text>
-                </>
-              ) : (
-                <>
-                  <Ionicons
-                    name="star"
-                    size={12}
-                    color={active ? colors.text : colors.accent}
-                  />
-                  <Text style={styles.filterText}>{value}</Text>
-                </>
-              )}
-            </TouchableOpacity>
+            />
           );
         })}
       </ScrollView>
@@ -155,7 +124,7 @@ export default function WatchedScreen({ route, navigation }: Props) {
               style={({ pressed }) => [styles.item, pressed && styles.pressed]}
               onPress={() =>
                 navigation.navigate("MovieDetails", {
-                  result: ratingToMedia(item),
+                  result: mediaFromKey(item),
                 })
               }
             >
@@ -201,17 +170,8 @@ const styles = StyleSheet.create({
     marginHorizontal: 12,
     marginVertical: 12,
   },
-  filterButton: {
-    backgroundColor: colors.surface,
-    borderRadius: 16,
-    paddingHorizontal: 14,
-    paddingVertical: 6,
-  },
-  filterButtonActive: { backgroundColor: colors.accent },
   ratingScroll: { flexGrow: 0, marginBottom: 12 },
   ratingRow: { gap: 8, paddingHorizontal: 12 },
-  ratingButton: { flexDirection: "row", alignItems: "center", gap: 4 },
-  filterText: { color: colors.text, fontSize: 13, fontWeight: "600" },
   list: { paddingHorizontal: 8, paddingBottom: 16 },
   // Each item takes 1/3 of the width, so we get 3 per line.
   item: { width: "33.33%", padding: 4, marginBottom: 6 },

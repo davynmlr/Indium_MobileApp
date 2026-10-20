@@ -1,9 +1,12 @@
 // This file manages usernames in the database.
 // Each username is saved in the "usernames" collection.
 // The username itself is the name of the document, so two users cannot have the same one.
+// Anyone can read these documents, so they must NOT contain the email
+// (it stays private in Firebase Auth). That's why login is by email only.
 
 import {
   collection,
+  deleteField,
   doc,
   documentId,
   getDoc,
@@ -11,8 +14,10 @@ import {
   limit,
   query,
   runTransaction,
+  updateDoc,
   where,
 } from "firebase/firestore";
+import type { User } from "firebase/auth";
 import { db } from "./firebase";
 import type { UserSummary } from "./follows";
 
@@ -31,22 +36,11 @@ export async function isUsernameTaken(username: string) {
   return snapshot.exists();
 }
 
-// Finds the email linked to a username (used to log in with a username).
-// Returns null if the username does not exist.
-export async function getEmailForUsername(username: string) {
-  const snapshot = await getDoc(usernameRef(username));
-  return snapshot.exists() ? (snapshot.data().email as string) : null;
-}
-
 // Saves a new username for a user.
 // We use a "transaction": the check and the save happen together,
 // so two people cannot take the same username at the same time.
 // If the username is already taken, it throws an error with code "username-taken".
-export async function claimUsername(
-  username: string,
-  uid: string,
-  email: string,
-) {
+export async function claimUsername(username: string, uid: string) {
   const ref = usernameRef(username);
   await runTransaction(db, async (transaction) => {
     // Check if the username already exists
@@ -56,9 +50,24 @@ export async function claimUsername(
         code: "username-taken",
       });
     }
-    // It is free, so we save it with the user id and email
-    transaction.set(ref, { uid, email, username: username.trim() });
+    // It is free, so we save it with the user id (never the email)
+    transaction.set(ref, { uid, username: username.trim() });
   });
+}
+
+// Old accounts were created when the email was saved here.
+// This removes it from the user's own document (runs after login).
+export async function removeEmailFromUsername(user: User) {
+  if (!user.displayName) return;
+  const ref = usernameRef(user.displayName);
+  const snapshot = await getDoc(ref);
+  if (
+    snapshot.exists() &&
+    snapshot.data().uid === user.uid &&
+    "email" in snapshot.data()
+  ) {
+    await updateDoc(ref, { email: deleteField() });
+  }
 }
 
 // Finds users whose username starts with `text` (max 20 results).

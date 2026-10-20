@@ -1,8 +1,8 @@
 // This file manages the favorite movies and series of a user.
 // They are saved in the database in the document users/{uid}.
 
-import { doc, onSnapshot, setDoc } from "firebase/firestore";
-import { db } from "./firebase";
+import { setDoc } from "firebase/firestore";
+import { subscribeToUserDoc, userDocRef } from "./userDoc";
 import type { TmdbMediaResult } from "./tmdb";
 
 // Number of favorite slots (3 movies and 3 series).
@@ -38,10 +38,9 @@ export function subscribeToFavorites(
   onChange: (favorites: Record<FavoriteType, Favorites>) => void,
   onError: (error: Error) => void,
 ) {
-  return onSnapshot(
-    doc(db, "users", uid),
-    (snapshot) => {
-      const data = snapshot.data();
+  return subscribeToUserDoc(
+    uid,
+    (data) => {
       onChange({
         movie: toSlots(data?.[FIELDS.movie]),
         tv: toSlots(data?.[FIELDS.tv]),
@@ -58,9 +57,5 @@ export async function saveFavorites(
   type: FavoriteType,
   favorites: Favorites,
 ) {
-  await setDoc(
-    doc(db, "users", uid),
-    { [FIELDS[type]]: favorites },
-    { merge: true },
-  );
+  await setDoc(userDocRef(uid), { [FIELDS[type]]: favorites }, { merge: true });
 }

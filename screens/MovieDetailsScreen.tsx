@@ -1,3 +1,7 @@
+// Details page of a movie or series.
+// The parts of the page are in components/details/, and what the user can do
+// (watchlist, stars, watched, review) is in hooks/useTitleActions.
+
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { useEffect, useState } from "react";
 import {
@@ -11,44 +15,21 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Ionicons from "@expo/vector-icons/Ionicons";
-import * as Speech from "expo-speech";
 
 import {
   getTmdbDetails,
   getTmdbImageUrl,
-  getMediaKey,
   getTrailer,
   TmdbMediaDetails,
-  TmdbMediaResult,
-  toSavedMedia,
 } from "../services/tmdb";
 import { useAuth } from "../hooks/useAuth";
-import {
-  isInWatchlist,
-  removeFromWatchlist,
-  saveWatchlist,
-  subscribeToWatchlist,
-} from "../services/watchlist";
-import { addReview, subscribeToUserReviews } from "../services/reviews";
-import {
-  getAverageRating,
-  Rating,
-  removeRating,
-  saveRating,
-  subscribeToUserRatings,
-} from "../services/ratings";
-import StarRating from "../components/StarRating";
-import {
-  getAiredSeasons,
-  getLatestAiredSeason,
-  removeSeriesProgress,
-  saveSeriesProgress,
-  SeriesProgressMap,
-  subscribeToSeriesProgress,
-} from "../services/seriesProgress";
+import { useTitleActions } from "../hooks/useTitleActions";
 import ReviewModal from "../components/ReviewModal";
-import ProgressModal from "../components/ProgressModal";
-import TrailerModal from "../components/TrailerModal";
+import RatingBox from "../components/details/RatingBox";
+import SeriesProgressCard from "../components/details/SeriesProgressCard";
+import StatsRow from "../components/details/StatsRow";
+import OverviewSection from "../components/details/OverviewSection";
+import TrailerSection from "../components/details/TrailerSection";
 import type { RootStackParamList } from "../navigation/types";
 import { colors } from "../theme/colors";
 
@@ -56,217 +37,14 @@ type Props = NativeStackScreenProps<RootStackParamList, "MovieDetails">;
 
 export default function MovieDetailsScreen({ route, navigation }: Props) {
   const { result } = route.params;
+  // Starts with the little data from the previous page, then the full TMDB data.
   const [details, setDetails] = useState<TmdbMediaDetails>(result);
   const [error, setError] = useState<string | null>(null);
-  const { user } = useAuth();
-  const [watchlist, setWatchlist] = useState<TmdbMediaResult[]>([]);
-
-  const uid = user?.uid;
-
-  // Listen to the watchlist to know if this movie is already in it.
-  useEffect(() => {
-    if (!uid) return;
-    return subscribeToWatchlist(uid, setWatchlist);
-  }, [uid]);
-
-  const inWatchlist = isInWatchlist(watchlist, result);
-
-  // Series only: where the user stopped watching.
-  const isSeries = result.media_type === "tv";
-  const mediaKey = getMediaKey(result);
-  const [allProgress, setAllProgress] = useState<SeriesProgressMap>({});
-  const [progressOpen, setProgressOpen] = useState(false);
-
-  useEffect(() => {
-    if (!uid || !isSeries) return;
-    return subscribeToSeriesProgress(uid, setAllProgress);
-  }, [uid, isSeries]);
-
-  const progress = allProgress[mediaKey];
-
   const [reviewOpen, setReviewOpen] = useState(false);
-  // Average of the app users' ratings (each user's last rating only).
-  const [userRating, setUserRating] = useState<{
-    average: number | null;
-    count: number;
-  }>({ average: null, count: 0 });
+  const { user } = useAuth();
 
-  const loadUserRating = () => {
-    getAverageRating(getMediaKey(result))
-      .then(setUserRating)
-      .catch(() => {});
-  };
-
-  useEffect(loadUserRating, [result.id, result.media_type]);
-
-  // The logged-in user's own rating of this title (0 = not rated yet).
-  const [myRatings, setMyRatings] = useState<Rating[]>([]);
-  useEffect(() => {
-    if (!uid) return;
-    return subscribeToUserRatings(uid, setMyRatings);
-  }, [uid]);
-  const myEntry = myRatings.find((rating) => rating.mediaKey === mediaKey);
-  const myRating = myEntry?.rating ?? 0;
-  // Watched = rated, reviewed, or marked with the eye button.
-  const isWatched = myEntry !== undefined;
-
-  // True if the user wrote a review of this title (then the stars can't be removed).
-  const [hasReview, setHasReview] = useState(false);
-  useEffect(() => {
-    if (!uid) return;
-    return subscribeToUserReviews(uid, (reviews) =>
-      setHasReview(reviews.some((review) => review.mediaKey === mediaKey)),
-    );
-  }, [uid, mediaKey]);
-  const canUnrate = myRating > 0 && !hasReview;
-
-  // Saves the stars only (no review, so nothing in "Recent activity").
-  const rate = async (rating: number) => {
-    if (!user) {
-      navigation.navigate("Login");
-      return;
-    }
-    try {
-      await saveRating({
-        uid: user.uid,
-        mediaKey,
-        title: details.title ?? details.name ?? "Untitled",
-        poster_path: details.poster_path ?? null,
-        rating,
-        updatedAt: Date.now(),
-      });
-      // A rated movie has been watched, so it leaves the watchlist.
-      if (inWatchlist) {
-        await saveWatchlist(user.uid, removeFromWatchlist(watchlist, result));
-      }
-      loadUserRating();
-    } catch {
-      setError("Could not save your rating.");
-    }
-  };
-
-  // Eye button: marks the title as watched without stars, or un-marks it.
-  // A rated or reviewed title stays watched (the stars would be lost).
-  const toggleWatched = async () => {
-    if (!user) {
-      navigation.navigate("Login");
-      return;
-    }
-    if (myRating > 0) return;
-    try {
-      if (isWatched) {
-        await removeRating(user.uid, mediaKey);
-      } else {
-        await rate(0);
-      }
-    } catch {
-      setError("Could not update watched.");
-    }
-  };
-
-  // Cross button: removes the stars. The title stays watched (0 stars),
-  // the eye button can then un-mark it.
-  const unrate = () => {
-    if (canUnrate) rate(0);
-  };
-
-  const openReview = () => {
-    if (!user) {
-      navigation.navigate("Login");
-      return;
-    }
-    setReviewOpen(true);
-  };
-
-  const submitReview = async (rating: number, comment: string, date: Date) => {
-    if (!user) return;
-    setReviewOpen(false);
-    const now = Date.now();
-    try {
-      await addReview({
-        uid: user.uid,
-        username: user.displayName ?? "",
-        mediaKey: getMediaKey(result),
-        title: details.title ?? details.name ?? "Untitled",
-        poster_path: details.poster_path ?? null,
-        rating,
-        comment,
-        createdAt: now,
-        date: date.getTime(),
-      });
-      // The review's stars also become the user's rating of this title.
-      await saveRating({
-        uid: user.uid,
-        mediaKey,
-        title: details.title ?? details.name ?? "Untitled",
-        poster_path: details.poster_path ?? null,
-        rating,
-        updatedAt: now,
-      });
-      // A reviewed movie has been watched, so it leaves the watchlist.
-      if (inWatchlist) {
-        await saveWatchlist(user.uid, removeFromWatchlist(watchlist, result));
-      }
-      loadUserRating();
-    } catch {
-      setError("Could not save your review.");
-    }
-  };
-
-  // Adds the movie to the watchlist, or removes it if it is already there.
-  const toggleWatchlist = async () => {
-    if (!user) {
-      navigation.navigate("Login");
-      return;
-    }
-    const next = inWatchlist
-      ? removeFromWatchlist(watchlist, result)
-      : [...watchlist, toSavedMedia(result)];
-    try {
-      await saveWatchlist(user.uid, next);
-    } catch {
-      setError("Could not update your watchlist.");
-    }
-  };
-
-  const openProgress = () => {
-    if (!user) {
-      navigation.navigate("Login");
-      return;
-    }
-    setProgressOpen(true);
-  };
-
-  const saveProgress = async (season: number, episode: number) => {
-    if (!user) return;
-    setProgressOpen(false);
-    const lastAired = details.last_episode_to_air;
-    try {
-      await saveSeriesProgress(user.uid, mediaKey, {
-        media: toSavedMedia(result),
-        season,
-        episode,
-        latestSeason: getLatestAiredSeason(details),
-        finished:
-          !!lastAired &&
-          season === lastAired.season_number &&
-          episode === lastAired.episode_number,
-        updatedAt: Date.now(),
-      });
-    } catch {
-      setError("Could not save your progress.");
-    }
-  };
-
-  const removeProgress = async () => {
-    if (!user) return;
-    setProgressOpen(false);
-    try {
-      await removeSeriesProgress(user.uid, mediaKey);
-    } catch {
-      setError("Could not remove your progress.");
-    }
-  };
+  const goToLogin = () => navigation.navigate("Login");
+  const actions = useTitleActions(result, details, user, goToLogin);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -287,39 +65,11 @@ export default function MovieDetailsScreen({ route, navigation }: Props) {
   const posterUrl = getTmdbImageUrl(details.poster_path, "w500");
   const mediaLabel = result.media_type === "movie" ? "Movie" : "Series";
   const trailer = getTrailer(details);
-  const [trailerOpen, setTrailerOpen] = useState(false);
+  const shownError = actions.error ?? error;
 
-  // Reads the synopsis aloud. Tap again to stop.
-  const [speaking, setSpeaking] = useState(false);
-  const toggleSpeech = () => {
-    if (speaking) {
-      Speech.stop();
-      setSpeaking(false);
-      return;
-    }
-    setSpeaking(true);
-    Speech.speak(`${title}. ${details.overview}`, {
-      language: "en-US",
-      onDone: () => setSpeaking(false),
-      onStopped: () => setSpeaking(false),
-      onError: () => setSpeaking(false),
-    });
-  };
-
-  // Stop reading when the page closes or shows another title.
-  useEffect(() => {
-    return () => {
-      Speech.stop();
-      setSpeaking(false);
-    };
-  }, [result.id, result.media_type]);
-
-  const openTrailer = () => {
-    if (speaking) {
-      Speech.stop();
-      setSpeaking(false);
-    }
-    setTrailerOpen(true);
+  const openReview = () => {
+    if (!user) return goToLogin();
+    setReviewOpen(true);
   };
 
   return (
@@ -341,194 +91,62 @@ export default function MovieDetailsScreen({ route, navigation }: Props) {
         </Text>
 
         <TouchableOpacity
-          style={[styles.watchlistButton, inWatchlist && styles.watchlistButtonActive]}
-          onPress={toggleWatchlist}
+          style={[
+            styles.watchlistButton,
+            actions.inWatchlist && styles.watchlistButtonActive,
+          ]}
+          onPress={actions.toggleWatchlist}
         >
-          <Text style={styles.watchlistButtonText}>
-            {inWatchlist ? "- Watchlist" : "+ Watchlist"}
+          <Text style={styles.buttonText}>
+            {actions.inWatchlist ? "- Watchlist" : "+ Watchlist"}
           </Text>
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.reviewButton} onPress={openReview}>
-          <Text style={styles.watchlistButtonText}>Review</Text>
+          <Text style={styles.buttonText}>Review</Text>
         </TouchableOpacity>
 
-        <View style={styles.rateBox}>
-          <Text style={styles.rateLabel}>
-            {myRating > 0 ? `Your rating: ${myRating} / 5` : "Rate it"}
-          </Text>
-          <View style={styles.rateRow}>
-            {/* Always takes the same space, so the stars don't move. */}
-            <TouchableOpacity
-              onPress={unrate}
-              disabled={!canUnrate}
-              hitSlop={8}
-              accessibilityRole="button"
-              accessibilityLabel="Remove your rating"
-              accessibilityElementsHidden={!canUnrate}
-              importantForAccessibility={canUnrate ? "auto" : "no-hide-descendants"}
-              style={[styles.unrateButton, !canUnrate && styles.hidden]}
-            >
-              <Ionicons name="close-circle" size={24} color={colors.textMuted} />
-            </TouchableOpacity>
-            <StarRating rating={myRating} onChange={rate} size={30} />
-            <TouchableOpacity
-              onPress={toggleWatched}
-              disabled={myRating > 0}
-              hitSlop={8}
-              accessibilityRole="button"
-              accessibilityState={{ selected: isWatched }}
-              accessibilityLabel={isWatched ? "Watched" : "Mark as watched"}
-              style={styles.watchedButton}
-            >
-              <Ionicons
-                name={isWatched ? "eye" : "eye-outline"}
-                size={30}
-                color={isWatched ? colors.accent : colors.textMuted}
-              />
-              <Text style={[styles.watchedText, isWatched && styles.watchedTextActive]}>
-                {isWatched ? "Watched" : "Watch"}
-              </Text>
-            </TouchableOpacity>
-          </View>
-        </View>
+        <RatingBox
+          rating={actions.myRating}
+          isWatched={actions.isWatched}
+          canUnrate={actions.canUnrate}
+          onRate={actions.rate}
+          onUnrate={actions.unrate}
+          onToggleWatched={actions.toggleWatched}
+        />
 
         <ReviewModal
           visible={reviewOpen}
           title={title}
           onClose={() => setReviewOpen(false)}
-          onSubmit={submitReview}
+          onSubmit={(rating, comment, watchedDate) => {
+            setReviewOpen(false);
+            actions.submitReview(rating, comment, watchedDate);
+          }}
         />
 
-        {isSeries ? (
-          <>
-            <TouchableOpacity style={styles.progressCard} onPress={openProgress}>
-              <Ionicons name="play-circle-outline" size={22} color={colors.accent} />
-              <View style={styles.progressCopy}>
-                <Text style={styles.progressLabel}>Your progress</Text>
-                <Text style={styles.progressValue}>
-                  {progress
-                    ? `Season ${progress.season} · Episode ${progress.episode}`
-                    : "Not started"}
-                </Text>
-              </View>
-              <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
-            </TouchableOpacity>
-
-            <ProgressModal
-              visible={progressOpen}
-              title={title}
-              seasons={getAiredSeasons(details)}
-              lastAired={
-                details.last_episode_to_air
-                  ? {
-                      season: details.last_episode_to_air.season_number,
-                      episode: details.last_episode_to_air.episode_number,
-                    }
-                  : null
-              }
-              initial={progress ?? null}
-              onClose={() => setProgressOpen(false)}
-              onSave={saveProgress}
-              onRemove={removeProgress}
-            />
-          </>
+        {result.media_type === "tv" ? (
+          <SeriesProgressCard
+            media={result}
+            details={details}
+            user={user}
+            onLoginNeeded={goToLogin}
+            onError={setError}
+          />
         ) : null}
 
-        {details.tagline ? <Text style={styles.tagline}>{details.tagline}</Text> : null}
-
-        <View style={styles.stats}>
-          <View style={styles.stat}>
-            <Ionicons name="star" size={18} color={colors.accent} />
-            <Text style={styles.statValue}>
-              {details.vote_average ? details.vote_average.toFixed(1) : "-"}
-            </Text>
-            <Text style={styles.statLabel}>Rating</Text>
-          </View>
-          <View style={styles.stat}>
-            <Ionicons name="people" size={18} color={colors.accent} />
-            <Text style={styles.statValue}>
-              {userRating.average ? `${userRating.average.toFixed(1)}/5` : "-"}
-            </Text>
-            <Text style={styles.statLabel}>
-              {userRating.count} {userRating.count === 1 ? "review" : "reviews"}
-            </Text>
-          </View>
-          <View style={styles.stat}>
-            <Text style={styles.statValue}>{details.original_language?.toUpperCase() ?? "-"}</Text>
-            <Text style={styles.statLabel}>Language</Text>
-          </View>
-          {details.number_of_seasons ? (
-            <View style={styles.stat}>
-              <Text style={styles.statValue}>{details.number_of_seasons}</Text>
-              <Text style={styles.statLabel}>Seasons</Text>
-            </View>
-          ) : null}
-        </View>
-
-        <View style={styles.overviewHeader}>
-          <Text style={styles.sectionTitle}>Overview</Text>
-          {details.overview ? (
-            <TouchableOpacity
-              style={[styles.listenButton, speaking && styles.listenButtonActive]}
-              onPress={toggleSpeech}
-              accessibilityRole="button"
-              accessibilityLabel={speaking ? "Stop reading" : "Listen to the synopsis"}
-            >
-              <Ionicons
-                name={speaking ? "stop" : "volume-high-outline"}
-                size={16}
-                color={colors.text}
-              />
-              <Text style={styles.listenText}>{speaking ? "Stop" : "Listen"}</Text>
-            </TouchableOpacity>
-          ) : null}
-        </View>
-        <Text style={styles.overview}>
-          {details.overview || "No overview is available for this title."}
-        </Text>
-
-        {details.genres?.length ? (
-          <View style={styles.genreRow}>
-            {details.genres.map((genre) => (
-              <View key={genre.id} style={styles.genre}>
-                <Text style={styles.genreText}>{genre.name}</Text>
-              </View>
-            ))}
-          </View>
+        {details.tagline ? (
+          <Text style={styles.tagline}>{details.tagline}</Text>
         ) : null}
 
-        {trailer ? (
-          <>
-            <Text style={styles.sectionTitle}>Trailer</Text>
-            <TouchableOpacity
-              style={styles.trailer}
-              onPress={openTrailer}
-              accessibilityRole="button"
-              accessibilityLabel={`Play the trailer of ${title}`}
-            >
-              <Image
-                source={{ uri: `https://img.youtube.com/vi/${trailer.key}/hqdefault.jpg` }}
-                style={styles.trailerImage}
-              />
-              <View style={styles.trailerPlay}>
-                <Ionicons name="play" size={30} color={colors.text} />
-              </View>
-            </TouchableOpacity>
-            <Text style={styles.trailerName} numberOfLines={1}>
-              {trailer.name}
-            </Text>
-            <TrailerModal
-              visible={trailerOpen}
-              trailer={trailer}
-              title={title}
-              onClose={() => setTrailerOpen(false)}
-            />
-          </>
-        ) : null}
+        <StatsRow details={details} average={actions.average} />
 
-        {error ? <Text style={styles.error}>{error}</Text> : null}
-        {!error && details === result ? (
+        <OverviewSection title={title} details={details} />
+
+        {trailer ? <TrailerSection trailer={trailer} title={title} /> : null}
+
+        {shownError ? <Text style={styles.error}>{shownError}</Text> : null}
+        {!shownError && details === result ? (
           <ActivityIndicator color={colors.accent} style={styles.loader} />
         ) : null}
       </ScrollView>
@@ -548,61 +166,12 @@ const styles = StyleSheet.create({
   posterPlaceholder: { alignItems: "center", justifyContent: "center" },
   title: { color: colors.text, fontSize: 28, fontWeight: "700", marginTop: 20 },
   meta: { color: colors.accent, fontSize: 14, marginTop: 6 },
-  tagline: { color: colors.textMuted, fontSize: 15, fontStyle: "italic", marginTop: 16 },
-  stats: {
-    flexDirection: "row",
-    backgroundColor: colors.surface,
-    borderRadius: 10,
-    justifyContent: "space-around",
-    marginTop: 20,
-    paddingVertical: 14,
+  tagline: {
+    color: colors.textMuted,
+    fontSize: 15,
+    fontStyle: "italic",
+    marginTop: 16,
   },
-  stat: { alignItems: "center", minWidth: 72 },
-  statValue: { color: colors.text, fontSize: 16, fontWeight: "700", marginTop: 4 },
-  statLabel: { color: colors.textMuted, fontSize: 12, marginTop: 3 },
-  sectionTitle: { color: colors.text, fontSize: 18, fontWeight: "700", marginTop: 24 },
-  overview: { color: colors.textMuted, fontSize: 15, lineHeight: 22, marginTop: 8 },
-  genreRow: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 18 },
-  genre: { backgroundColor: colors.border, borderRadius: 6, paddingHorizontal: 10, paddingVertical: 6 },
-  genreText: { color: colors.text, fontSize: 12 },
-  overviewHeader: {
-    flexDirection: "row",
-    alignItems: "flex-end",
-    justifyContent: "space-between",
-  },
-  listenButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    backgroundColor: colors.surface,
-    borderRadius: 16,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-  },
-  listenButtonActive: { backgroundColor: colors.accent },
-  listenText: { color: colors.text, fontSize: 13, fontWeight: "600" },
-  trailer: {
-    marginTop: 10,
-    borderRadius: 10,
-    overflow: "hidden",
-    backgroundColor: colors.surface,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  trailerImage: { width: "100%", aspectRatio: 16 / 9 },
-  trailerPlay: {
-    position: "absolute",
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "rgba(0, 0, 0, 0.6)",
-    paddingLeft: 4, // the play triangle looks centered this way
-  },
-  trailerName: { color: colors.textMuted, fontSize: 13, marginTop: 6 },
-  error: { color: colors.textMuted, fontSize: 13, marginTop: 20 },
-  loader: { marginTop: 20 },
   watchlistButton: {
     backgroundColor: colors.accent,
     borderRadius: 8,
@@ -622,32 +191,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginTop: 10,
   },
-  watchlistButtonText: { color: colors.text, fontSize: 15, fontWeight: "600" },
-  rateBox: {
-    backgroundColor: colors.surface,
-    borderRadius: 8,
-    paddingVertical: 12,
-    marginTop: 10,
-    alignItems: "center",
-    gap: 8,
-  },
-  rateLabel: { color: colors.textMuted, fontSize: 13, fontWeight: "600" },
-  rateRow: { flexDirection: "row", alignItems: "center", gap: 16 },
-  watchedButton: { alignItems: "center" },
-  unrateButton: { width: 30, alignItems: "center" },
-  hidden: { opacity: 0 },
-  watchedText: { color: colors.textMuted, fontSize: 11, marginTop: 2 },
-  watchedTextActive: { color: colors.accent, fontWeight: "600" },
-  progressCard: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-    backgroundColor: colors.surface,
-    borderRadius: 8,
-    padding: 12,
-    marginTop: 10,
-  },
-  progressCopy: { flex: 1 },
-  progressLabel: { color: colors.textMuted, fontSize: 12 },
-  progressValue: { color: colors.text, fontSize: 15, fontWeight: "600", marginTop: 2 },
+  buttonText: { color: colors.text, fontSize: 15, fontWeight: "600" },
+  error: { color: colors.textMuted, fontSize: 13, marginTop: 20 },
+  loader: { marginTop: 20 },
 });

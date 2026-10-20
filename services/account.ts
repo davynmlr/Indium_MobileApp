@@ -9,8 +9,6 @@ import {
   User,
   verifyBeforeUpdateEmail,
 } from "firebase/auth";
-import { doc, getDoc, updateDoc } from "firebase/firestore";
-import { db } from "./firebase";
 
 // Checks the current password. Throws "auth/invalid-credential" if it is wrong.
 async function confirmPassword(user: User, currentPassword: string) {
@@ -38,18 +36,6 @@ export async function requestEmailChange(
 ) {
   await confirmPassword(user, currentPassword);
   await verifyBeforeUpdateEmail(user, newEmail);
-}
-
-// The "usernames" collection keeps each user's email (for logging in with a username).
-// After an email change, we put the new email there too.
-export async function syncUsernameEmail(user: User) {
-  if (!user.displayName || !user.email) return;
-  const ref = doc(db, "usernames", user.displayName.trim().toLowerCase());
-  const snapshot = await getDoc(ref);
-  if (!snapshot.exists() || snapshot.data().uid !== user.uid) return;
-  if (snapshot.data().email !== user.email) {
-    await updateDoc(ref, { email: user.email });
-  }
 }
 
 // Turns a Firebase error into a message for the user.

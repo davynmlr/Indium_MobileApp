@@ -2,10 +2,10 @@
 // The photo is saved as a small JPEG (base64 text) in the document users/{uid},
 // in the field "photo". This way we don't need Firebase Storage.
 
-import { deleteField, doc, onSnapshot, setDoc } from "firebase/firestore";
+import { deleteField, setDoc } from "firebase/firestore";
 import * as ImagePicker from "expo-image-picker";
 import { ImageManipulator, SaveFormat } from "expo-image-manipulator";
-import { db } from "./firebase";
+import { subscribeToUserDoc, userDocRef } from "./userDoc";
 
 // Size of the saved photo in pixels (square). Small, so the document stays light.
 const PHOTO_SIZE = 256;
@@ -44,7 +44,7 @@ export async function pickProfilePhoto(): Promise<string | null> {
 // Saves the photo in the database. `null` removes it.
 export async function saveProfilePhoto(uid: string, photo: string | null) {
   await setDoc(
-    doc(db, "users", uid),
+    userDocRef(uid),
     { photo: photo ?? deleteField() },
     { merge: true },
   );
@@ -56,9 +56,9 @@ export function subscribeToProfilePhoto(
   uid: string,
   onChange: (photo: string | null) => void,
 ) {
-  return onSnapshot(
-    doc(db, "users", uid),
-    (snapshot) => onChange(snapshot.data()?.photo ?? null),
+  return subscribeToUserDoc(
+    uid,
+    (data) => onChange(data?.photo ?? null),
     () => onChange(null),
   );
 }
