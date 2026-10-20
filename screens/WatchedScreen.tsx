@@ -3,6 +3,7 @@ import {
   FlatList,
   Image,
   Pressable,
+  ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -24,6 +25,22 @@ const filters = [
   { value: "tv", label: "Series" },
 ] as const;
 
+// Rating filter: null = any rating, 0 = watched without rating, else 0.5 to 5.
+const ratingFilters: (number | null)[] = [
+  null,
+  0.5,
+  1,
+  1.5,
+  2,
+  2.5,
+  3,
+  3.5,
+  4,
+  4.5,
+  5,
+  0,
+];
+
 // Turns a rating back into a movie/series, to open its details page.
 // mediaKey looks like "movie-123", so we split it to get the type and the id.
 const ratingToMedia = (rating: Rating): TmdbMediaResult => {
@@ -43,13 +60,15 @@ export default function WatchedScreen({ route, navigation }: Props) {
   const { uid } = route.params;
   const [ratings, setRatings] = useState<Rating[]>([]);
   const [filter, setFilter] = useState<"all" | "movie" | "tv">("all");
+  const [ratingFilter, setRatingFilter] = useState<number | null>(null);
 
   useEffect(() => subscribeToUserRatings(uid, setRatings), [uid]);
 
-  const list =
-    filter === "all"
-      ? ratings
-      : ratings.filter((rating) => rating.mediaKey.startsWith(`${filter}-`));
+  const list = ratings.filter(
+    (rating) =>
+      (filter === "all" || rating.mediaKey.startsWith(`${filter}-`)) &&
+      (ratingFilter === null || rating.rating === ratingFilter),
+  );
 
   return (
     <View style={styles.container}>
@@ -57,7 +76,10 @@ export default function WatchedScreen({ route, navigation }: Props) {
         {filters.map((option) => (
           <TouchableOpacity
             key={option.value}
-            style={[styles.filterButton, filter === option.value && styles.filterButtonActive]}
+            style={[
+              styles.filterButton,
+              filter === option.value && styles.filterButtonActive,
+            ]}
             onPress={() => setFilter(option.value)}
           >
             <Text style={styles.filterText}>{option.label}</Text>
@@ -65,19 +87,76 @@ export default function WatchedScreen({ route, navigation }: Props) {
         ))}
       </View>
 
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        style={styles.ratingScroll}
+        contentContainerStyle={styles.ratingRow}
+      >
+        {ratingFilters.map((value) => {
+          const active = ratingFilter === value;
+          return (
+            <TouchableOpacity
+              key={String(value)}
+              style={[
+                styles.filterButton,
+                styles.ratingButton,
+                active && styles.filterButtonActive,
+              ]}
+              onPress={() => setRatingFilter(value)}
+              accessibilityRole="button"
+              accessibilityState={{ selected: active }}
+              accessibilityLabel={
+                value === null
+                  ? "Any rating"
+                  : value === 0
+                    ? "Not rated"
+                    : `Rated ${value} stars`
+              }
+            >
+              {value === null ? (
+                <Text style={styles.filterText}>Any rating</Text>
+              ) : value === 0 ? (
+                <>
+                  <Ionicons name="eye" size={12} color={colors.text} />
+                  <Text style={styles.filterText}>No rating</Text>
+                </>
+              ) : (
+                <>
+                  <Ionicons
+                    name="star"
+                    size={12}
+                    color={active ? colors.text : colors.accent}
+                  />
+                  <Text style={styles.filterText}>{value}</Text>
+                </>
+              )}
+            </TouchableOpacity>
+          );
+        })}
+      </ScrollView>
+
       <FlatList
         data={list}
         numColumns={3}
         keyExtractor={(item) => item.mediaKey}
         contentContainerStyle={styles.list}
-        ListEmptyComponent={<Text style={styles.empty}>Nothing watched yet.</Text>}
+        ListEmptyComponent={
+          <Text style={styles.empty}>
+            {ratings.length === 0
+              ? "Nothing watched yet."
+              : "Nothing matches this filter."}
+          </Text>
+        }
         renderItem={({ item }) => {
           const imageUrl = getTmdbImageUrl(item.poster_path, "w342");
           return (
             <Pressable
               style={({ pressed }) => [styles.item, pressed && styles.pressed]}
               onPress={() =>
-                navigation.navigate("MovieDetails", { result: ratingToMedia(item) })
+                navigation.navigate("MovieDetails", {
+                  result: ratingToMedia(item),
+                })
               }
             >
               {imageUrl ? (
@@ -89,16 +168,23 @@ export default function WatchedScreen({ route, navigation }: Props) {
                   </Text>
                 </View>
               )}
-              <View style={styles.stars}>
-                {[1, 2, 3, 4, 5].map((star) => (
-                  <Ionicons
-                    key={star}
-                    name={getStarIcon(item.rating, star)}
-                    size={12}
-                    color={colors.accent}
-                  />
-                ))}
-              </View>
+              {item.rating > 0 ? (
+                <View style={styles.stars}>
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <Ionicons
+                      key={star}
+                      name={getStarIcon(item.rating, star)}
+                      size={12}
+                      color={colors.accent}
+                    />
+                  ))}
+                </View>
+              ) : (
+                // Watched without a rating: just an eye.
+                <View style={styles.stars}>
+                  <Ionicons name="eye" size={12} color={colors.textMuted} />
+                </View>
+              )}
             </Pressable>
           );
         }}
@@ -122,6 +208,9 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
   },
   filterButtonActive: { backgroundColor: colors.accent },
+  ratingScroll: { flexGrow: 0, marginBottom: 12 },
+  ratingRow: { gap: 8, paddingHorizontal: 12 },
+  ratingButton: { flexDirection: "row", alignItems: "center", gap: 4 },
   filterText: { color: colors.text, fontSize: 13, fontWeight: "600" },
   list: { paddingHorizontal: 8, paddingBottom: 16 },
   // Each item takes 1/3 of the width, so we get 3 per line.

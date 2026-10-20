@@ -27,10 +27,11 @@ import {
   saveWatchlist,
   subscribeToWatchlist,
 } from "../services/watchlist";
-import { addReview } from "../services/reviews";
+import { addReview, subscribeToUserReviews } from "../services/reviews";
 import {
   getAverageRating,
   Rating,
+  removeRating,
   saveRating,
   subscribeToUserRatings,
 } from "../services/ratings";
@@ -101,8 +102,20 @@ export default function MovieDetailsScreen({ route, navigation }: Props) {
     if (!uid) return;
     return subscribeToUserRatings(uid, setMyRatings);
   }, [uid]);
-  const myRating =
-    myRatings.find((rating) => rating.mediaKey === mediaKey)?.rating ?? 0;
+  const myEntry = myRatings.find((rating) => rating.mediaKey === mediaKey);
+  const myRating = myEntry?.rating ?? 0;
+  // Watched = rated, reviewed, or marked with the eye button.
+  const isWatched = myEntry !== undefined;
+
+  // True if the user wrote a review of this title (then the stars can't be removed).
+  const [hasReview, setHasReview] = useState(false);
+  useEffect(() => {
+    if (!uid) return;
+    return subscribeToUserReviews(uid, (reviews) =>
+      setHasReview(reviews.some((review) => review.mediaKey === mediaKey)),
+    );
+  }, [uid, mediaKey]);
+  const canUnrate = myRating > 0 && !hasReview;
 
   // Saves the stars only (no review, so nothing in "Recent activity").
   const rate = async (rating: number) => {
@@ -127,6 +140,31 @@ export default function MovieDetailsScreen({ route, navigation }: Props) {
     } catch {
       setError("Could not save your rating.");
     }
+  };
+
+  // Eye button: marks the title as watched without stars, or un-marks it.
+  // A rated or reviewed title stays watched (the stars would be lost).
+  const toggleWatched = async () => {
+    if (!user) {
+      navigation.navigate("Login");
+      return;
+    }
+    if (myRating > 0) return;
+    try {
+      if (isWatched) {
+        await removeRating(user.uid, mediaKey);
+      } else {
+        await rate(0);
+      }
+    } catch {
+      setError("Could not update watched.");
+    }
+  };
+
+  // Cross button: removes the stars. The title stays watched (0 stars),
+  // the eye button can then un-mark it.
+  const unrate = () => {
+    if (canUnrate) rate(0);
   };
 
   const openReview = () => {
@@ -281,7 +319,40 @@ export default function MovieDetailsScreen({ route, navigation }: Props) {
           <Text style={styles.rateLabel}>
             {myRating > 0 ? `Your rating: ${myRating} / 5` : "Rate it"}
           </Text>
-          <StarRating rating={myRating} onChange={rate} size={30} />
+          <View style={styles.rateRow}>
+            {/* Always takes the same space, so the stars don't move. */}
+            <TouchableOpacity
+              onPress={unrate}
+              disabled={!canUnrate}
+              hitSlop={8}
+              accessibilityRole="button"
+              accessibilityLabel="Remove your rating"
+              accessibilityElementsHidden={!canUnrate}
+              importantForAccessibility={canUnrate ? "auto" : "no-hide-descendants"}
+              style={[styles.unrateButton, !canUnrate && styles.hidden]}
+            >
+              <Ionicons name="close-circle" size={24} color={colors.textMuted} />
+            </TouchableOpacity>
+            <StarRating rating={myRating} onChange={rate} size={30} />
+            <TouchableOpacity
+              onPress={toggleWatched}
+              disabled={myRating > 0}
+              hitSlop={8}
+              accessibilityRole="button"
+              accessibilityState={{ selected: isWatched }}
+              accessibilityLabel={isWatched ? "Watched" : "Mark as watched"}
+              style={styles.watchedButton}
+            >
+              <Ionicons
+                name={isWatched ? "eye" : "eye-outline"}
+                size={30}
+                color={isWatched ? colors.accent : colors.textMuted}
+              />
+              <Text style={[styles.watchedText, isWatched && styles.watchedTextActive]}>
+                {isWatched ? "Watched" : "Watch"}
+              </Text>
+            </TouchableOpacity>
+          </View>
         </View>
 
         <ReviewModal
@@ -441,6 +512,12 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   rateLabel: { color: colors.textMuted, fontSize: 13, fontWeight: "600" },
+  rateRow: { flexDirection: "row", alignItems: "center", gap: 16 },
+  watchedButton: { alignItems: "center" },
+  unrateButton: { width: 30, alignItems: "center" },
+  hidden: { opacity: 0 },
+  watchedText: { color: colors.textMuted, fontSize: 11, marginTop: 2 },
+  watchedTextActive: { color: colors.accent, fontWeight: "600" },
   progressCard: {
     flexDirection: "row",
     alignItems: "center",

@@ -1,4 +1,5 @@
 // Small window to review a movie/series: choose the date, the stars and write a comment.
+// With `initial`, it edits an existing review (the form starts with its values).
 
 import { useEffect, useState } from "react";
 import {
@@ -14,30 +15,38 @@ import Ionicons from "@expo/vector-icons/Ionicons";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { colors } from "../theme/colors";
 import StarRating from "./StarRating";
+import { getReviewDate, Review } from "../services/reviews";
 
 type Props = {
   visible: boolean;
   title: string;
   onClose: () => void;
   onSubmit: (rating: number, comment: string, date: Date) => void;
+  initial?: Review; // the review being edited
 };
 
-export default function ReviewModal({ visible, title, onClose, onSubmit }: Props) {
+export default function ReviewModal({
+  visible,
+  title,
+  onClose,
+  onSubmit,
+  initial,
+}: Props) {
   const [rating, setRating] = useState(0);
   const [comment, setComment] = useState("");
   // Date when the user watched it (today by default)
   const [date, setDate] = useState(new Date());
   const [showDatePicker, setShowDatePicker] = useState(false);
 
-  // Start with an empty form each time the window opens.
+  // Each time the window opens: an empty form, or the values of the edited review.
   useEffect(() => {
     if (visible) {
-      setRating(0);
-      setComment("");
-      setDate(new Date());
+      setRating(initial?.rating ?? 0);
+      setComment(initial?.comment ?? "");
+      setDate(initial ? new Date(getReviewDate(initial)) : new Date());
       setShowDatePicker(false);
     }
-  }, [visible]);
+  }, [visible, initial]);
 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
@@ -45,7 +54,7 @@ export default function ReviewModal({ visible, title, onClose, onSubmit }: Props
         <View style={styles.box}>
           <View style={styles.header}>
             <Text style={styles.title} numberOfLines={2}>
-              Review {title}
+              {initial ? "Edit review of" : "Review"} {title}
             </Text>
             <Pressable onPress={onClose} hitSlop={12}>
               <Ionicons name="close" size={24} color={colors.text} />
@@ -90,7 +99,9 @@ export default function ReviewModal({ visible, title, onClose, onSubmit }: Props
             onPress={() => onSubmit(rating, comment.trim(), date)}
             disabled={rating === 0}
           >
-            <Text style={styles.buttonText}>Save review</Text>
+            <Text style={styles.buttonText}>
+              {initial ? "Save changes" : "Save review"}
+            </Text>
           </TouchableOpacity>
         </View>
       </View>

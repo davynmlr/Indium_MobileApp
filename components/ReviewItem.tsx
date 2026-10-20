@@ -1,5 +1,6 @@
 // One review in a list: poster, title, stars, comment and date.
 // Used in the Profile, Diary and Friends screens.
+// With onEdit / onDelete (your own reviews), it shows edit and delete buttons.
 
 import { Image, Pressable, StyleSheet, Text, View } from "react-native";
 import Ionicons from "@expo/vector-icons/Ionicons";
@@ -13,6 +14,8 @@ type Props = {
   // Friends feed: show who wrote the review. Tapping the name calls onUserPress.
   showUser?: boolean;
   onUserPress?: () => void;
+  onEdit?: () => void;
+  onDelete?: () => void;
 };
 
 export default function ReviewItem({
@@ -20,6 +23,8 @@ export default function ReviewItem({
   onPress,
   showUser,
   onUserPress,
+  onEdit,
+  onDelete,
 }: Props) {
   const imageUrl = getTmdbImageUrl(review.poster_path);
   const date = new Date(getReviewDate(review)).toLocaleDateString();
@@ -40,9 +45,31 @@ export default function ReviewItem({
             <Text style={styles.userAction}> reviewed</Text>
           </Pressable>
         ) : null}
-        <Text style={styles.title} numberOfLines={1}>
-          {review.title}
-        </Text>
+        <View style={styles.titleRow}>
+          <Text style={styles.title} numberOfLines={1}>
+            {review.title}
+          </Text>
+          {onEdit ? (
+            <Pressable
+              onPress={onEdit}
+              hitSlop={8}
+              accessibilityRole="button"
+              accessibilityLabel={`Edit your review of ${review.title}`}
+            >
+              <Ionicons name="create-outline" size={18} color={colors.textMuted} />
+            </Pressable>
+          ) : null}
+          {onDelete ? (
+            <Pressable
+              onPress={onDelete}
+              hitSlop={8}
+              accessibilityRole="button"
+              accessibilityLabel={`Delete your review of ${review.title}`}
+            >
+              <Ionicons name="trash-outline" size={18} color={colors.textMuted} />
+            </Pressable>
+          ) : null}
+        </View>
         <View style={styles.stars}>
           {[1, 2, 3, 4, 5].map((star) => (
             <Ionicons
@@ -96,7 +123,13 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
     fontSize: 13,
   },
+  titleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 14,
+  },
   title: {
+    flex: 1,
     color: colors.text,
     fontSize: 15,
     fontWeight: "700",

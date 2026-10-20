@@ -17,6 +17,7 @@ import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import MoviePickerModal from "./MoviePickerModal";
 import ReviewItem from "./ReviewItem";
+import { useReviewActions } from "../hooks/useReviewActions";
 import {
   Review,
   reviewToMedia,
@@ -33,6 +34,8 @@ import {
   subscribeToFollowers,
   subscribeToFollowing,
 } from "../services/follows";
+import { subscribeToProfilePhoto } from "../services/profilePhoto";
+import { Rating, subscribeToUserRatings } from "../services/ratings";
 import {
   getTmdbImageUrl,
   toSavedMedia,
@@ -77,6 +80,13 @@ export default function ProfileView({
   const [reviews, setReviews] = useState<Review[]>([]);
   const [followersCount, setFollowersCount] = useState(0);
   const [followingCount, setFollowingCount] = useState(0);
+  // Photo saved in the database (set in Settings).
+  const [savedPhoto, setSavedPhoto] = useState<string | null>(null);
+  const avatarUri = savedPhoto ?? photoURL;
+  // Everything watched (rated, reviewed or marked with the eye).
+  const [watched, setWatched] = useState<Rating[]>([]);
+  const moviesWatched = watched.filter((w) => w.mediaKey.startsWith("movie-")).length;
+  const seriesWatched = watched.filter((w) => w.mediaKey.startsWith("tv-")).length;
 
   useEffect(
     () =>
@@ -86,6 +96,9 @@ export default function ProfileView({
     [uid],
   );
   useEffect(() => subscribeToUserReviews(uid, setReviews), [uid]);
+  const { startEdit, confirmDelete, editModal } = useReviewActions(reviews);
+  useEffect(() => subscribeToProfilePhoto(uid, setSavedPhoto), [uid]);
+  useEffect(() => subscribeToUserRatings(uid, setWatched), [uid]);
   useEffect(
     () => subscribeToFollowers(uid, (users) => setFollowersCount(users.length)),
     [uid],
@@ -203,8 +216,8 @@ export default function ProfileView({
     <>
       <ScrollView contentContainerStyle={styles.content}>
         <View style={styles.header}>
-          {photoURL ? (
-            <Image source={{ uri: photoURL }} style={styles.avatar} />
+          {avatarUri ? (
+            <Image source={{ uri: avatarUri }} style={styles.avatar} />
           ) : (
             <View style={[styles.avatar, styles.avatarPlaceholder]}>
               <Text style={styles.avatarInitial}>
@@ -245,6 +258,22 @@ export default function ProfileView({
                 </Text>
               </Pressable>
             </View>
+            <Pressable
+              style={styles.followRow}
+              onPress={() => navigation.navigate("Watched", { uid })}
+              hitSlop={6}
+              accessibilityRole="button"
+              accessibilityLabel={`${moviesWatched} movies and ${seriesWatched} series watched`}
+            >
+              <Text style={styles.followText}>
+                <Text style={styles.followCount}>{moviesWatched}</Text>{" "}
+                {moviesWatched === 1 ? "Movie" : "Movies"}
+              </Text>
+              <Text style={styles.followSeparator}>|</Text>
+              <Text style={styles.followText}>
+                <Text style={styles.followCount}>{seriesWatched}</Text> Series
+              </Text>
+            </Pressable>
           </View>
           {headerRight}
         </View>
@@ -285,18 +314,21 @@ export default function ProfileView({
         ) : (
           reviews.slice(0, 3).map((review) => (
             <ReviewItem
-              key={`${review.mediaKey}-${review.createdAt}`}
+              key={review.id ?? `${review.mediaKey}-${review.createdAt}`}
               review={review}
               onPress={() =>
                 navigation.navigate("MovieDetails", {
                   result: reviewToMedia(review),
                 })
               }
+              onEdit={isOwnProfile ? () => startEdit(review) : undefined}
+              onDelete={isOwnProfile ? () => confirmDelete(review) : undefined}
             />
           ))
         )}
       </ScrollView>
 
+      {isOwnProfile ? editModal : null}
       {isOwnProfile ? (
         <MoviePickerModal
           visible={pickingSlot !== null}

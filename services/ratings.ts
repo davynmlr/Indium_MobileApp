@@ -3,9 +3,11 @@
 // so a user has only one rating per title (rating again replaces it).
 // Writing a review also saves its rating here.
 // Ratings are not shown in "Recent activity", only reviews are.
+// A rating of 0 means "watched, but not rated" (the eye button).
 
 import {
   collection,
+  deleteDoc,
   doc,
   getDocs,
   onSnapshot,
@@ -24,7 +26,7 @@ export type Rating = {
   mediaKey: string; // "movie-123" or "tv-456"
   title: string;
   poster_path: string | null;
-  rating: number; // 0.5 to 5 stars (steps of 0.5)
+  rating: number; // 0.5 to 5 stars (steps of 0.5), 0 = watched without rating
   updatedAt: number; // when the rating was saved, in milliseconds
 };
 
@@ -34,6 +36,11 @@ const ratingRef = (uid: string, mediaKey: string) =>
 // Saves (or replaces) the rating of a user for one title.
 export async function saveRating(rating: Rating) {
   await setDoc(ratingRef(rating.uid, rating.mediaKey), rating);
+}
+
+// Removes the rating of a user for one title (used to un-mark "watched").
+export async function removeRating(uid: string, mediaKey: string) {
+  await deleteDoc(ratingRef(uid, mediaKey));
 }
 
 // Turns a review into a rating, so both can be mixed in one list.
@@ -103,7 +110,9 @@ export async function getAverageRating(mediaKey: string) {
     ...ratingsSnapshot.docs.map((d) => d.data() as Rating),
     ...reviewsSnapshot.docs.map((d) => reviewToRating(d.data() as Review)),
   ];
-  const values = keepNewest(all, (r) => r.uid).map((r) => r.rating);
+  // "Watched without rating" (0 stars) does not count in the average.
+  const rated = all.filter((r) => r.rating > 0);
+  const values = keepNewest(rated, (r) => r.uid).map((r) => r.rating);
 
   if (values.length === 0) {
     return { average: null, count: 0 };

@@ -1,12 +1,17 @@
 // This file manages the reviews of movies and series.
 // Each review is a document in the "reviews" collection.
 // A user can review the same title many times: every review is kept.
+// The author can edit (stars, comment, date) or delete their reviews.
 // The average rating is calculated in ratings.ts.
 
 import {
   addDoc,
   collection,
+  deleteDoc,
+  doc,
   onSnapshot,
+  QueryDocumentSnapshot,
+  updateDoc,
   query,
   where,
 } from "firebase/firestore";
@@ -14,6 +19,7 @@ import { db } from "./firebase";
 import type { TmdbMediaResult } from "./tmdb";
 
 export type Review = {
+  id?: string; // name of the document in the database (only when read from it)
   uid: string;
   username: string;
   mediaKey: string; // "movie-123" or "tv-456"
@@ -27,8 +33,28 @@ export type Review = {
 
 // Saves a new review in the database.
 export async function addReview(review: Review) {
-  await addDoc(collection(db, "reviews"), review);
+  const { id, ...data } = review; // the id is not saved inside the document
+  await addDoc(collection(db, "reviews"), data);
 }
+
+// The parts of a review that can be edited.
+export type ReviewChanges = Pick<Review, "rating" | "comment" | "date">;
+
+// Changes the stars, comment and date of a review.
+export async function updateReview(id: string, changes: ReviewChanges) {
+  await updateDoc(doc(db, "reviews", id), changes);
+}
+
+// Deletes a review.
+export async function deleteReview(id: string) {
+  await deleteDoc(doc(db, "reviews", id));
+}
+
+// Reads a review from the database, with its document name as id.
+const toReview = (document: QueryDocumentSnapshot): Review => ({
+  ...(document.data() as Review),
+  id: document.id,
+});
 
 // Listens to all the reviews written by one user, newest first.
 // Each time they change, `onChange` is called with the new list.
@@ -40,7 +66,7 @@ export function subscribeToUserReviews(
   return onSnapshot(
     query(collection(db, "reviews"), where("uid", "==", uid)),
     (snapshot) => {
-      const reviews = snapshot.docs.map((document) => document.data() as Review);
+      const reviews = snapshot.docs.map(toReview);
       // Sort here instead of in the query, so Firestore doesn't need an extra index.
       reviews.sort((a, b) => getReviewDate(b) - getReviewDate(a));
       onChange(reviews);
@@ -74,7 +100,7 @@ export function subscribeToReviewsOfUsers(
           where("uid", "in", uids.slice(i, i + 30)),
         ),
         (snapshot) => {
-          groups[index] = snapshot.docs.map((d) => d.data() as Review);
+          groups[index] = snapshot.docs.map(toReview);
           const all = groups.flat();
           all.sort((a, b) => getReviewDate(b) - getReviewDate(a));
           onChange(all);

@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { FlatList, StyleSheet, Text } from "react-native";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import ReviewItem from "../components/ReviewItem";
+import { useAuth } from "../hooks/useAuth";
+import { useReviewActions } from "../hooks/useReviewActions";
 import {
   Review,
   reviewToMedia,
@@ -20,22 +22,34 @@ export default function DiaryScreen({ route, navigation }: Props) {
 
   useEffect(() => subscribeToUserReviews(uid, setReviews), [uid]);
 
+  // Your own diary: reviews can be edited and deleted.
+  const { user } = useAuth();
+  const isMine = user?.uid === uid;
+  const { startEdit, confirmDelete, editModal } = useReviewActions(reviews);
+
   return (
-    <FlatList
-      style={styles.container}
-      contentContainerStyle={styles.list}
-      data={reviews}
-      keyExtractor={(item) => `${item.mediaKey}-${item.createdAt}`}
-      ListEmptyComponent={<Text style={styles.text}>No reviews yet.</Text>}
-      renderItem={({ item }) => (
-        <ReviewItem
-          review={item}
-          onPress={() =>
-            navigation.navigate("MovieDetails", { result: reviewToMedia(item) })
-          }
-        />
-      )}
-    />
+    <>
+      <FlatList
+        style={styles.container}
+        contentContainerStyle={styles.list}
+        data={reviews}
+        keyExtractor={(item) => item.id ?? `${item.mediaKey}-${item.createdAt}`}
+        ListEmptyComponent={<Text style={styles.text}>No reviews yet.</Text>}
+        renderItem={({ item }) => (
+          <ReviewItem
+            review={item}
+            onPress={() =>
+              navigation.navigate("MovieDetails", {
+                result: reviewToMedia(item),
+              })
+            }
+            onEdit={isMine ? () => startEdit(item) : undefined}
+            onDelete={isMine ? () => confirmDelete(item) : undefined}
+          />
+        )}
+      />
+      {editModal}
+    </>
   );
 }
 
