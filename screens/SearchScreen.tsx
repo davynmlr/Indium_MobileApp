@@ -11,6 +11,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Ionicons from "@expo/vector-icons/Ionicons";
+import AppHeader from "../components/AppHeader";
 import { colors } from "../theme/colors";
 import { useTmdbSearch } from "../hooks/useTmdbSearch";
 import { getTmdbImageUrl, TmdbMediaResult } from "../services/tmdb";
@@ -63,6 +64,7 @@ export default function SearchScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea} edges={["top"]}>
+      <AppHeader />
       <View style={styles.container}>
         <Text style={styles.title}>Search</Text>
 

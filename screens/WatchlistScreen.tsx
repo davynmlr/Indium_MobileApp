@@ -7,6 +7,7 @@ import {
   ScrollView,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import AppHeader from "../components/AppHeader";
 import { useAuth } from "../hooks/useAuth";
 import LoggedOutView from "../components/LoggedOutView";
 import PosterGrid from "../components/PosterGrid";
@@ -135,7 +136,12 @@ export default function WatchlistScreen({ route, navigation }: any) {
 
   return (
     <SafeAreaView style={styles.container} edges={fromProfile ? [] : ["top"]}>
-      {fromProfile ? null : <Text style={styles.title}>Watchlist</Text>}
+      {fromProfile ? null : (
+        <>
+          <AppHeader />
+          <Text style={styles.title}>Watchlist</Text>
+        </>
+      )}
       <View style={[styles.filterRow, fromProfile && styles.filterRowTop]}>
         {typeFilters.map((option) =>
           chip(option.label, filter === option.value, () =>

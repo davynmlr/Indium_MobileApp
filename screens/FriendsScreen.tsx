@@ -9,6 +9,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Ionicons from "@expo/vector-icons/Ionicons";
+import AppHeader from "../components/AppHeader";
 import { useAuth } from "../hooks/useAuth";
 import LoggedOutView from "../components/LoggedOutView";
 import UserRow from "../components/UserRow";
@@ -67,6 +68,7 @@ export default function FriendsScreen({ navigation }: any) {
 
   return (
     <SafeAreaView style={styles.safeArea} edges={["top"]}>
+      <AppHeader />
       <Text style={styles.title}>Friends</Text>
 
       <View style={styles.searchBar}>
