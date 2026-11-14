@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "Indium",
-    "slug": "0PROJECT",
+    "slug": "indium",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/logo.png",
