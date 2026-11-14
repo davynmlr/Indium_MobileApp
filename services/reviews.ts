@@ -44,7 +44,6 @@ export async function updateReview(id: string, changes: ReviewChanges) {
   await updateDoc(doc(db, "reviews", id), changes);
 }
 
-// Deletes a review.
 export async function deleteReview(id: string) {
   await deleteDoc(doc(db, "reviews", id));
 }

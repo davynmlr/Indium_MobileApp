@@ -1,3 +1,4 @@
+// Settings: profile photo, change password/email, and log out.
 import { useEffect, useState } from "react";
 import {
   ActivityIndicator,

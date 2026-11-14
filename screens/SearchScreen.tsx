@@ -1,3 +1,4 @@
+// Search tab: search movies and series on TMDB. Shows this week's trending titles when empty.
 import { useEffect, useState } from "react";
 import {
   ActivityIndicator,

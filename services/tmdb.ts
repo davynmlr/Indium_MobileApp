@@ -3,7 +3,6 @@
 
 // One movie or series, as TMDB sends it.
 // Movies use `title` and `release_date`, series use `name` and `first_air_date`.
-// The "?" means the field can be missing.
 export type TmdbMediaResult = {
   id: number;
   media_type: "movie" | "tv";
@@ -67,7 +66,6 @@ type TmdbListResponse = {
 // `path` is the end of the link, for example "/movie/top_rated?page=1".
 // `signal` lets us cancel the request (for example if the user types something new).
 async function tmdbFetch(path: string, signal?: AbortSignal) {
-  // Get the API key from the .env file
   const apiKey = process.env.EXPO_PUBLIC_TMDB_API_KEY?.trim();
   if (!apiKey) {
     throw new Error("Missing EXPO_PUBLIC_TMDB_API_KEY");
@@ -93,7 +91,6 @@ async function tmdbFetch(path: string, signal?: AbortSignal) {
 
 // Searches movies and series by text (for example "batman").
 export async function searchTmdb(query: string, signal?: AbortSignal) {
-  // encodeURIComponent makes the text safe to put in a link.
   const data: TmdbListResponse = await tmdbFetch(
     `/search/multi?query=${encodeURIComponent(query)}&include_adult=false`,
     signal,

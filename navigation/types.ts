@@ -5,8 +5,7 @@ export type RootStackParamList = {
   Login: undefined;
   Settings: undefined;
   MovieDetails: { result: TmdbMediaResult };
-  // Profile pages. `uid` is the user whose data we show
-  // (the logged-in user now, and friends later).
+  // Profile pages. `uid` is the user whose data we show.
   Diary: { uid: string };
   UserWatchlist: { uid: string };
   MySeries: { uid: string };

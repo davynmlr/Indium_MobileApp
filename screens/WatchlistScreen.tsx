@@ -36,8 +36,7 @@ const getYear = (item: TmdbMediaResult) => {
 
 // Shows the watchlist of a user.
 // - From the bottom tab: no params, it shows the logged-in user's watchlist.
-// - From a profile: route.params.uid says whose watchlist to show
-//   (later, friends can open each other's watchlist this way).
+// - From a profile: route.params.uid says whose watchlist to show.
 export default function WatchlistScreen({ route, navigation }: any) {
   const { user } = useAuth();
   const [watchlist, setWatchlist] = useState<TmdbMediaResult[]>([]);

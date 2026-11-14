@@ -43,7 +43,6 @@ export async function isUsernameTaken(username: string) {
 export async function claimUsername(username: string, uid: string) {
   const ref = usernameRef(username);
   await runTransaction(db, async (transaction) => {
-    // Check if the username already exists
     const snapshot = await transaction.get(ref);
     if (snapshot.exists()) {
       throw Object.assign(new Error("Username is taken"), {

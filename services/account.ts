@@ -17,7 +17,6 @@ async function confirmPassword(user: User, currentPassword: string) {
   await reauthenticateWithCredential(user, credential);
 }
 
-// Changes the password.
 export async function changePassword(
   user: User,
   currentPassword: string,

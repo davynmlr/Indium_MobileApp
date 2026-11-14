@@ -5,7 +5,7 @@ import { initializeApp } from "firebase/app";
 import { initializeFirestore } from "firebase/firestore";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-// @ts-ignore
+// @ts-ignore: getReactNativePersistence is missing from Firebase's type definitions.
 import { initializeAuth, getReactNativePersistence } from "firebase/auth";
 
 // The keys of our Firebase project.
@@ -19,7 +19,6 @@ const firebaseConfig = {
   appId: process.env.EXPO_PUBLIC_FIREBASE_APP_ID,
 };
 
-// Start Firebase with our config.
 const app = initializeApp(firebaseConfig);
 
 // Login system. AsyncStorage saves the user on the phone,
@@ -28,8 +27,7 @@ export const auth = initializeAuth(app, {
   persistence: getReactNativePersistence(AsyncStorage),
 });
 
-// The database (Firestore).
-// The normal connection mode does not work well in React Native,
+// The database (Firestore). The normal connection mode does not work well in React Native,
 // so we use "long polling" (the app asks the server again and again).
 export const db = initializeFirestore(app, {
   experimentalForceLongPolling: true,

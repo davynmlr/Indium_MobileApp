@@ -1,3 +1,4 @@
+// App entry: bottom tabs (Home, Search, Watchlist, Friends, Profile) and the pages opened on top of them.
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";

@@ -21,7 +21,6 @@ const FIELDS: Record<FavoriteType, string> = {
   tv: "favoriteSeries",
 };
 
-// Creates a list with 3 empty slots: [null, null, null]
 export const emptyFavorites = (): Favorites =>
   Array(FAVORITES_COUNT).fill(null);
 

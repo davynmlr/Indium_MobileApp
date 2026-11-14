@@ -1,3 +1,4 @@
+// The app's color palette, used by every screen.
 export const colors = {
   background: "#14181c",
   surface: "#1f262d",

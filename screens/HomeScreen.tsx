@@ -1,3 +1,4 @@
+// Home tab: the Films and Series top tabs.
 import { StyleSheet } from "react-native";
 import { createMaterialTopTabNavigator } from "@react-navigation/material-top-tabs";
 import { SafeAreaView } from "react-native-safe-area-context";

@@ -1,3 +1,4 @@
+// Login and register (with a unique username) by email and password.
 import { useState } from "react";
 import {
   View,

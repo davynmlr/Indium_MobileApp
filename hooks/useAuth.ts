@@ -1,3 +1,4 @@
+// The logged-in Firebase user (null if logged out). `loading` is true until Firebase answers.
 import { useState, useEffect } from "react";
 import { onAuthStateChanged, User } from "firebase/auth";
 import { auth } from "../services/firebase";

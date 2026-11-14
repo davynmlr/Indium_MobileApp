@@ -1,3 +1,4 @@
+// Series tab of the Home screen.
 import MediaListScreen from "./MediaListScreen";
 
 export default function SeriesScreen() {
