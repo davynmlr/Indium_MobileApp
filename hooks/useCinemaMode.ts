@@ -2,6 +2,8 @@
 // and puts it back when the trailer is closed (or the app goes in the background).
 // The on/off choice is remembered on the phone.
 
+//This file was written with the help of AI
+
 import { useEffect, useState } from "react";
 import { AppState, Platform } from "react-native";
 import * as Brightness from "expo-brightness";

@@ -3,6 +3,8 @@
 // Firestore listener each, they share ONE listener per user.
 // When the last screen stops listening, the listener is closed.
 
+//This file was written with the help of AI
+
 import { doc, DocumentData, onSnapshot } from "firebase/firestore";
 import { db } from "./firebase";
 
