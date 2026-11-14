@@ -92,4 +92,4 @@ navigation/types.ts  Pages and their parameters
 theme/               Colors and shared styles
 ```
 
-This README was written by AI
+This README was written with the help of AI
